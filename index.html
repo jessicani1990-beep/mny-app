@@ -3,84 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家計簿</title>
+    <title>倪光家計簿</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f7f3f0; color: #4a4541; }
+        .card { background: #ffffff; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .btn-primary { background-color: #8a9a89; color: white; transition: 0.3s; font-weight: 700; }
+        .btn-primary:active { background-color: #6d7a6c; }
+        .nav-active { color: #7a8a79; font-weight: 700; border-top: 2px solid #7a8a79; }
+        .stat-box { background: #fdfcfb; border-radius: 12px; padding: 14px; border-left: 5px solid #8a9a89; border-top: 1px solid #eee; }
+        .label-text { color: #6b645e; font-weight: 700; font-size: 0.75rem; margin-bottom: 4px; display: block; }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+    </style>
 </head>
-<body class="bg-gray-100 p-5">
-    <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-md">
-        <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">夫妻共同記帳</h2>
-        
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">記錄者</label>
-                <select id="user" class="mt-1 block w-full p-2 border rounded-md">
-                    <option value="您">您</option>
-                    <option value="先生">先生</option>
-                </select>
+<body class="pb-24">
+
+    <!-- 底部導覽列 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 z-50">
+        <button onclick="showPage('add')" id="nav-add" class="flex flex-col items-center p-2 nav-active text-xs"><span>🖋️</span>記帳</button>
+        <button onclick="showPage('history')" id="nav-history" class="flex flex-col items-center p-2 text-gray-500 text-xs"><span>📜</span>紀錄</button>
+        <button onclick="showPage('chart')" id="nav-chart" class="flex flex-col items-center p-2 text-gray-500 text-xs"><span>📊</span>分析</button>
+        <button onclick="showPage('setting')" id="nav-setting" class="flex flex-col items-center p-2 text-gray-500 text-xs"><span>⚙️</span>設定</button>
+    </nav>
+
+    <!-- 第一頁：新增紀錄 -->
+    <div id="page-add" class="p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">生活誌紀錄</h2>
+        <div class="card p-6 space-y-5">
+            <div class="flex justify-between border-b border-stone-300 pb-2">
+                <input type="date" id="date" class="outline-none text-sm font-bold bg-transparent">
+                <div class="text-sm font-bold text-stone-600 uppercase">
+                    <span id="display-user">倪</span> · <span id="display-type">家用</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="label-text">紀錄者</label>
+                    <select id="user" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
+                        <option value="倪">倪</option><option value="光">光</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="label-text">屬性</label>
+                    <select id="type" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
+                        <option value="家用">家用</option><option value="個人">個人</option>
+                    </select>
+                </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">項目名稱</label>
-                <input type="text" id="item" placeholder="例如：底片採購、晚餐" class="mt-1 block w-full p-2 border rounded-md">
+                <label class="label-text">金額</label>
+                <input type="number" id="amount" inputmode="numeric" placeholder="0" class="w-full border-b py-2 text-3xl font-bold outline-none text-stone-800 bg-transparent">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">金額</label>
-                <input type="number" id="amount" inputmode="numeric" class="mt-1 block w-full p-2 border rounded-md">
+            <div class="flex gap-4">
+                <div class="w-1/2">
+                    <label class="label-text">項目</label>
+                    <input type="text" id="item" placeholder="細節描述" class="w-full border-b py-2 text-sm outline-none bg-transparent">
+                </div>
+                <div class="w-1/2">
+                    <label class="label-text">分類</label>
+                    <select id="category" class="w-full border-b py-2 text-sm outline-none">
+                        <option value="飲食">飲食</option><option value="日常">日常</option>
+                        <option value="交通">交通</option><option value="醫療">醫療</option>
+                        <option value="娛樂">娛樂</option><option value="治裝">治裝</option>
+                        <option value="保險">保險</option><option value="寵物">寵物</option>
+                        <option value="運動">運動</option><option value="其他">其他</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">分類</label>
-                <select id="category" class="mt-1 block w-full p-2 border rounded-md">
-                    <option>餐飲食品</option>
-                    <option>店面營運</option>
-                    <option>交通運輸</option>
-                    <option>生活雜項</option>
-                </select>
-            </div>
-
-            <button onclick="submitData()" id="submitBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">
-                送出資料
-            </button>
+            <button onclick="submitData()" class="w-full btn-primary p-4 rounded-full mt-6 tracking-widest text-sm shadow-md">儲存這筆紀錄</button>
         </div>
+    </div>
+
+    <!-- 第二頁：歷史紀錄 -->
+    <div id="page-history" class="hidden p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
+        <div id="history-list" class="space-y-4"></div>
+    </div>
+
+    <!-- 第三頁：分析報告 -->
+    <div id="page-chart" class="hidden p-6 text-stone-700">
+        <h2 class="text-lg font-bold mb-4 tracking-widest text-center">收支分析</h2>
         
-        <p id="status" class="mt-4 text-center text-sm text-gray-500"></p>
+        <div class="flex items-center justify-between gap-2 mb-6 bg-white p-3 rounded-xl shadow-sm border border-stone-200">
+            <input type="date" id="start-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
+            <span class="text-xs text-stone-400">至</span>
+            <input type="date" id="end-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
+        </div>
+
+        <!-- 數據卡片 -->
+        <div class="grid grid-cols-2 gap-3 mb-8 font-bold">
+            <div class="stat-box text-stone-800">
+                <p class="text-[10px] text-stone-500 uppercase">倪 · 家用總計</p>
+                <p class="text-base" id="stat-ni-home">$0</p>
+            </div>
+            <div class="stat-box">
+                <p class="text-[10px] text-stone-500 uppercase">倪 · 個人總計</p>
+                <p class="text-base text-stone-800" id="stat-ni-self">$0</p>
+            </div>
+            <div class="stat-box border-l-stone-400">
+                <p class="text-[10px] text-stone-500 uppercase">光 · 家用總計</p>
+                <p class="text-base text-stone-800" id="stat-guang-home">$0</p>
+            </div>
+            <div class="stat-box border-l-stone-400">
+                <p class="text-[10px] text-stone-500 uppercase">光 · 個人總計</p>
+                <p class="text-base text-stone-800" id="stat-guang-self">$0</p>
+            </div>
+        </div>
+
+        <!-- 三個圓餅圖 -->
+        <div class="space-y-8">
+            <div class="card p-5">
+                <h3 class="text-xs font-bold text-center mb-4 text-stone-500 tracking-tighter">● 全家 · 家用花費分佈</h3>
+                <div class="chart-container"><canvas id="homeChart"></canvas></div>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="text-xs font-bold text-center mb-4 text-stone-500 tracking-tighter">● 倪 · 個人花費分佈</h3>
+                <div class="chart-container"><canvas id="niChart"></canvas></div>
+            </div>
+
+            <div class="card p-5">
+                <h3 class="text-xs font-bold text-center mb-4 text-stone-500 tracking-tighter">● 光 · 個人花費分佈</h3>
+                <div class="chart-container"><canvas id="guangChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Big Expenses</h3>
+            <div id="big-list" class="space-y-1"></div>
+        </div>
+    </div>
+
+    <!-- 第四頁：設定 -->
+    <div id="page-setting" class="hidden p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">系統設定</h2>
+        <div class="card p-8 text-center space-y-8">
+            <div>
+                <p class="text-xs text-stone-500 mb-3 font-bold uppercase tracking-widest">備份資料庫</p>
+                <button onclick="exportData()" class="w-full py-4 bg-stone-100 border border-stone-300 rounded-full text-sm font-bold text-stone-700 hover:bg-stone-200">📩 下載備份檔 (JSON)</button>
+            </div>
+            <div class="border-t border-stone-100 pt-8">
+                <p class="text-xs text-stone-500 mb-3 font-bold uppercase tracking-widest">回復資料庫</p>
+                <input type="file" id="fileInput" accept=".json" onchange="importData(event)" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" class="w-full py-4 bg-stone-700 text-white rounded-full text-sm font-bold shadow-md">📤 上傳備份檔 (JSON)</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwgUGUlKDem0dDPcxHBIqrUO8qANG3dUXD7PAVNrd48mGOwFO2LGCBPm3_TOww0jWcu/exec"; // 貼上剛才部署的網址
+        const now = new Date();
+        document.getElementById('date').valueAsDate = now;
+        document.getElementById('start-date').valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        document.getElementById('end-date').valueAsDate = now;
 
-        async function submitData() {
-            const btn = document.getElementById('submitBtn');
-            const status = document.getElementById('status');
-            
-            const payload = {
+        let db = JSON.parse(localStorage.getItem('ni-guang-data')) || [];
+
+        function showPage(pageId) {
+            document.querySelectorAll('div[id^="page-"]').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('nav-active');
+                b.classList.add('text-gray-500');
+            });
+            document.getElementById('page-' + pageId).classList.remove('hidden');
+            document.getElementById('nav-' + pageId).classList.add('nav-active');
+            document.getElementById('nav-' + pageId).classList.remove('text-gray-500');
+            if(pageId === 'history') renderHistory();
+            if(pageId === 'chart') renderChart();
+        }
+
+        function updateDisplay() {
+            document.getElementById('display-user').innerText = document.getElementById('user').value;
+            document.getElementById('display-type').innerText = document.getElementById('type').value;
+        }
+
+        function submitData() {
+            const entry = {
+                id: Date.now(),
+                date: document.getElementById('date').value,
                 user: document.getElementById('user').value,
+                type: document.getElementById('type').value,
+                amount: parseFloat(document.getElementById('amount').value) || 0,
                 item: document.getElementById('item').value,
-                amount: document.getElementById('amount').value,
                 category: document.getElementById('category').value
             };
+            if(!entry.amount || !entry.item) return alert('請填寫金額與項目');
+            db.unshift(entry);
+            saveToStorage();
+            alert('紀錄成功');
+            document.getElementById('amount').value = '';
+            document.getElementById('item').value = '';
+        }
 
-            if(!payload.item || !payload.amount) return alert('請填寫完整');
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = db.length ? db.map(item => `
+                <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold">
+                    <div>
+                        <p class="text-[10px] text-stone-400">${item.date} · ${item.user}${item.type}</p>
+                        <p class="text-sm">${item.item} <span class="text-[10px] font-normal text-stone-400">#${item.category}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-stone-800">$${item.amount.toLocaleString()}</p>
+                        <button onclick="deleteItem(${item.id})" class="text-[10px] text-red-500 underline">Delete</button>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
+        }
 
-            btn.disabled = true;
-            status.innerText = "傳送中...";
+        let charts = { home: null, ni: null, guang: null };
 
-            try {
-                // 使用 no-cors 模式避開跨網域問題
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    body: JSON.stringify(payload)
-                });
-                status.innerText = "✅ 已成功記錄到 Google 表單！";
-                document.getElementById('item').value = "";
-                document.getElementById('amount').value = "";
-            } catch (e) {
-                status.innerText = "❌ 發生錯誤：" + e;
-            } finally {
-                btn.disabled = false;
-            }
+        function renderChart() {
+            const start = document.getElementById('start-date').value;
+            const end = document.getElementById('end-date').value;
+            const filtered = db.filter(i => i.date >= start && i.date <= end);
+
+            let stats = { "倪家用": 0, "倪個人": 0, "光家用": 0, "光個人": 0 };
+            let cats = { home: {}, ni: {}, guang: {} };
+            let bigOnes = filtered.filter(i => i.amount >= 1000).sort((a,b) => b.amount - a.amount).slice(0, 5);
+
+            filtered.forEach(i => {
+                stats[i.user + i.type] += i.amount;
+                if(i.type === "家用") {
+                    cats.home[i.category] = (cats.home[i.category] || 0) + i.amount;
+                } else if(i.user === "倪") {
+                    cats.ni[i.category] = (cats.ni[i.category] || 0) + i.amount;
+                } else if(i.user === "光") {
+                    cats.guang[i.category] = (cats.guang[i.category] || 0) + i.amount;
+                }
+            });
+
+            document.getElementById('stat-ni-home').innerText = `$${stats['倪家用'].toLocaleString()}`;
+            document.getElementById('stat-ni-self').innerText = `$${stats['倪個人'].toLocaleString()}`;
+            document.getElementById('stat-guang-home').innerText = `$${stats['光家用'].toLocaleString()}`;
+            document.getElementById('stat-guang-self').innerText = `$${stats['光個人'].toLocaleString()}`;
+
+            const palette = ['#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9ead9d', '#A69CAC', '#E8A598', '#8E9AAF', '#C44536', '#7785AC'];
+
+            const genConfig = (data) => ({
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{ data: Object.values(data), backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }]
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#4a4541', font: { size: 10, weight: '700' }, boxWidth: 8 } } }
+                }
+            });
+
+            ['home', 'ni', 'guang'].forEach(key => {
+                if(charts[key]) charts[key].destroy();
+                charts[key] = new Chart(document.getElementById(key + 'Chart').getContext('2d'), genConfig(cats[key]));
+            });
+
+            document.getElementById('big-list').innerHTML = bigOnes.map(i => `
+                <div class="flex justify-between text-xs py-2 border-b border-stone-100 font-bold italic">
+                    <span class="text-stone-600">${i.item}</span>
+                    <span class="text-stone-800">$${i.amount.toLocaleString()}</span>
+                </div>
+            `).join('') || '<p class="text-[10px] text-stone-400">此區間無大額支出</p>';
+        }
+
+        function deleteItem(id) {
+            if(!confirm('確定刪除？')) return;
+            db = db.filter(i => i.id !== id);
+            saveToStorage();
+            renderHistory();
+        }
+
+        function saveToStorage() { localStorage.setItem('ni-guang-data', JSON.stringify(db)); }
+        function exportData() {
+            const blob = new Blob([JSON.stringify(db, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `倪光家計簿_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                db = JSON.parse(event.target.result);
+                saveToStorage();
+                alert('匯入成功！');
+                showPage('history');
+            };
+            reader.readAsText(e.target.files[0]);
         }
     </script>
 </body>
