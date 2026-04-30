@@ -1,22 +1,21 @@
 {
   "short_name": "倪光家計簿",
-  "name": "倪光家計簿：雲端記帳系統",
+  "name": "倪光家計簿",
   "icons": [
     {
       "src": "./myicon.png",
-      "type": "image/png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
       "src": "./myicon.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "type": "image/png"
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#f5f5f4",
   "display": "standalone",
-  "scope": "./",
+  "background_color": "#ffffff",
   "theme_color": "#e07a5f"
 }
