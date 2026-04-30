@@ -145,6 +145,14 @@
     </div>
 
     <script>
+    // 1. 【就在這裡！】請把這段貼在 <script> 開始後的第一個位置
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('App 服務啟動成功'))
+                .catch(err => console.log('服務啟動失敗', err));
+        });
+    }
         // ======= 請在此處替換您的 GAS URL =======
         const GAS_URL = "https://script.google.com/macros/s/AKfycbw4f7HKvhbqqQZrRMj3fKLFYnk9Mu7Oh_3xLr2aIu_mQikCDeGjsys8qyNKggy4ZWRO/exec";
         // ======================================
