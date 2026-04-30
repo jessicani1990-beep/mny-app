@@ -16,10 +16,15 @@
         .nav-active { color: #7a8a79; font-weight: 700; border-top: 2px solid #7a8a79; }
         .stat-box { background: #fdfcfb; border-radius: 12px; padding: 14px; border-left: 5px solid #8a9a89; border-top: 1px solid #eee; }
         .chart-container { position: relative; height: 220px; width: 100%; }
+        select, input { background-color: transparent !important; }
     </style>
 </head>
 <body class="pb-24">
-    <div id="loading" class="loading font-bold text-stone-500"><span>同步中...</span></div>
+    <!-- 全域載入動畫 -->
+    <div id="loading" class="loading font-bold text-stone-500">
+        <div class="mb-2">⏳</div>
+        <span>雲端同步中...</span>
+    </div>
 
     <!-- 底部導覽列 -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 z-50">
@@ -37,53 +42,86 @@
                 <input type="date" id="date" class="outline-none bg-transparent">
                 <span class="text-stone-600 uppercase"><span id="display-user">倪</span> · <span id="display-type">家用</span></span>
             </div>
+            
             <div class="flex gap-4">
-                <div class="flex-1"><label class="text-[10px] font-bold text-stone-500">紀錄者</label>
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-stone-500 uppercase">紀錄者</label>
                     <select id="user" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
-                        <option value="倪">倪</option><option value="光">光</option></select></div>
-                <div class="flex-1"><label class="text-[10px] font-bold text-stone-500">屬性</label>
+                        <option value="倪">倪</option><option value="光">光</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] font-bold text-stone-500 uppercase">屬性</label>
                     <select id="type" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
-                        <option value="家用">家用</option><option value="個人">個人</option></select></div>
+                        <option value="家用">家用</option><option value="個人">個人</option>
+                    </select>
+                </div>
             </div>
-            <div><label class="text-[10px] font-bold text-stone-500">金額</label>
-                <input type="number" id="amount" inputmode="numeric" placeholder="0" class="w-full border-b py-2 text-3xl font-bold outline-none"></div>
+
+            <div>
+                <label class="text-[10px] font-bold text-stone-500 uppercase">金額</label>
+                <input type="number" id="amount" inputmode="numeric" placeholder="0" class="w-full border-b py-2 text-3xl font-bold outline-none text-stone-800">
+            </div>
+
             <div class="flex gap-4">
-                <div class="w-1/2"><label class="text-[10px] font-bold text-stone-500">項目</label>
-                    <input type="text" id="item" placeholder="細節描述" class="w-full border-b py-2 text-sm outline-none"></div>
-                <div class="w-1/2"><label class="text-[10px] font-bold text-stone-500">分類</label>
+                <div class="w-1/2">
+                    <label class="text-[10px] font-bold text-stone-500 uppercase">項目</label>
+                    <input type="text" id="item" placeholder="細節描述" class="w-full border-b py-2 text-sm outline-none">
+                </div>
+                <div class="w-1/2">
+                    <label class="text-[10px] font-bold text-stone-500 uppercase">分類</label>
                     <select id="category" class="w-full border-b py-2 text-sm outline-none">
-                        <option value="飲食">飲食</option><option value="日常">日常</option><option value="交通">交通</option>
-                        <option value="醫療">醫療</option><option value="娛樂">娛樂</option><option value="治裝">治裝</option>
-                        <option value="保險">保險</option><option value="寵物">寵物</option><option value="運動">運動</option><option value="其他">其他</option>
-                    </select></div>
+                        <option value="飲食">飲食</option><option value="日常">日常</option>
+                        <option value="交通">交通</option><option value="醫療">醫療</option>
+                        <option value="娛樂">娛樂</option><option value="治裝">治裝</option>
+                        <option value="保險">保險</option><option value="寵物">寵物</option>
+                        <option value="運動">運動</option><option value="其他">其他</option>
+                    </select>
+                </div>
             </div>
+
             <button onclick="submitData()" class="w-full btn-primary p-4 rounded-full mt-6 tracking-widest text-sm shadow-md">同步至雲端帳簿</button>
         </div>
     </div>
 
     <!-- 第二頁：歷史紀錄 -->
-    <div id="page-history" class="hidden p-6"><h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2><div id="history-list" class="space-y-4"></div></div>
+    <div id="page-history" class="hidden p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
+        <div id="history-list" class="space-y-4"></div>
+    </div>
 
     <!-- 第三頁：分析報告 -->
     <div id="page-chart" class="hidden p-6 text-stone-700">
         <h2 class="text-lg font-bold mb-4 tracking-widest text-center">收支分析</h2>
+        
         <div class="flex items-center justify-between gap-2 mb-6 bg-white p-3 rounded-xl shadow-sm border border-stone-200">
             <input type="date" id="start-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
             <span class="text-xs text-stone-400">至</span>
             <input type="date" id="end-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
         </div>
+
         <div class="grid grid-cols-2 gap-3 mb-8 font-bold text-center">
-            <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 家用</p><p class="text-sm" id="stat-ni-home">$0</p></div>
-            <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 個人</p><p class="text-sm" id="stat-ni-self">$0</p></div>
-            <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 家用</p><p class="text-sm" id="stat-guang-home">$0</p></div>
-            <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 個人</p><p class="text-sm" id="stat-guang-self">$0</p></div>
+            <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 家用</p> <p class="text-sm" id="stat-ni-home">$0</p> </div>
+            <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 個人</p> <p class="text-sm" id="stat-ni-self">$0</p> </div>
+            <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 家用</p> <p class="text-sm" id="stat-guang-home">$0</p> </div>
+            <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 個人</p> <p class="text-sm" id="stat-guang-self">$0</p> </div>
         </div>
+
         <div class="space-y-6">
-            <div class="card p-4"><h3 class="text-[11px] font-bold text-center mb-3 text-stone-500">● 全家 · 家用花費</h3><div class="chart-container"><canvas id="homeChart"></canvas></div></div>
-            <div class="card p-4"><h3 class="text-[11px] font-bold text-center mb-3 text-stone-500">● 倪 · 個人花費</h3><div class="chart-container"><canvas id="niChart"></canvas></div></div>
-            <div class="card p-4"><h3 class="text-[11px] font-bold text-center mb-3 text-stone-500">● 光 · 個人花費</h3><div class="chart-container"><canvas id="guangChart"></canvas></div></div>
+            <div class="card p-4">
+                <h3 class="text-[11px] font-bold text-center mb-3 text-stone-500 uppercase tracking-widest">● 全家 · 家用花費</h3>
+                <div class="chart-container"><canvas id="homeChart"></canvas></div>
+            </div>
+            <div class="card p-4">
+                <h3 class="text-[11px] font-bold text-center mb-3 text-stone-500 uppercase tracking-widest">● 倪 · 個人花費</h3>
+                <div class="chart-container"><canvas id="niChart"></canvas></div>
+            </div>
+            <div class="card p-4">
+                <h3 class="text-[11px] font-bold text-center mb-3 text-stone-500 uppercase tracking-widest">● 光 · 個人花費</h3>
+                <div class="chart-container"><canvas id="guangChart"></canvas></div>
+            </div>
         </div>
-        <!-- 補回大額支出區域 -->
+
         <div class="mt-8">
             <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Big Expenses (> $1,000)</h3>
             <div id="big-list" class="space-y-1"></div>
@@ -92,26 +130,38 @@
 
     <!-- 第四頁：設定 -->
     <div id="page-setting" class="hidden p-6 text-center">
-        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">系統設定</h2>
-        <div class="card p-8"><button onclick="fetchData()" class="w-full py-4 bg-stone-700 text-white rounded-full text-sm font-bold shadow-md">🔄 立即強制同步雲端</button></div>
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center font-bold">系統設定</h2>
+        <div class="card p-8">
+            <p class="text-[10px] text-stone-400 mb-4 tracking-widest">目前資料儲存於 Google 試算表</p>
+            <button onclick="fetchData()" class="w-full py-4 bg-stone-700 text-white rounded-full text-sm font-bold shadow-md active:scale-95 transition-all">🔄 立即強制同步雲端</button>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwwaJ9meqFj9R1fl2yKedAFy_MVNvkJfYHmkV4b6mgqrLHH1ZgMZew_RQ4HPT9M7sqq/exec"; // 務必替換成您的 URL
+        // ======= 請在此處替換您的 GAS URL =======
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxkgIdldhffBxCbFXSCnIAJ6hs9zzN4RDBYjLdDeSQ/dev"; 
+        // ======================================
+
         let db = [];
 
+        // 從雲端抓取資料
         async function fetchData() {
             document.getElementById('loading').style.display = 'flex';
             try {
                 const response = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({action: "get"}) });
                 db = await response.json();
-                db.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id); // 確保日期最新在上面
+                // 排序：日期最新的在上面，若日期相同則 ID (時間戳) 大的在上面
+                db.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
                 renderHistory();
                 renderChart();
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Fetch error:", e);
+                alert("同步失敗，請檢查網路連線或 GAS 設定");
+            }
             document.getElementById('loading').style.display = 'none';
         }
 
+        // 提交資料到雲端
         async function submitData() {
             const entry = {
                 action: "add",
@@ -123,18 +173,24 @@
                 item: document.getElementById('item').value,
                 category: document.getElementById('category').value
             };
-            if(!entry.amount || !entry.item) return alert('請填寫完整');
+
+            if(!entry.amount || !entry.item) return alert('請填寫完整金額與項目');
+
             document.getElementById('loading').style.display = 'flex';
             try {
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify(entry) });
                 document.getElementById('amount').value = '';
                 document.getElementById('item').value = '';
-                await fetchData();
+                await fetchData(); // 成功後自動刷新
                 alert("雲端儲存成功！");
-            } catch (e) { alert("儲存失敗"); }
+            } catch (e) {
+                alert("儲存失敗，請重試");
+            }
             document.getElementById('loading').style.display = 'none';
         }
-async function deleteItem(id) {
+
+        // 刪除雲端資料
+        async function deleteItem(id) {
             if(!confirm('確定要從雲端刪除這筆紀錄嗎？')) return;
             
             document.getElementById('loading').style.display = 'flex';
@@ -145,15 +201,17 @@ async function deleteItem(id) {
                 });
                 const result = await response.text();
                 if(result === "Deleted") {
-                    await fetchData(); // 重新抓取資料更新畫面
+                    await fetchData();
                 } else {
-                    alert("刪除失敗：找不到該項目");
+                    alert("刪除失敗：雲端找不到該項目");
                 }
             } catch (e) {
-                alert("網路連線錯誤，無法刪除");
+                alert("網路連線錯誤");
             }
             document.getElementById('loading').style.display = 'none';
         }
+
+        // 初始化
         window.onload = () => {
             const now = new Date();
             document.getElementById('date').valueAsDate = now;
@@ -164,11 +222,15 @@ async function deleteItem(id) {
 
         function showPage(pageId) {
             document.querySelectorAll('div[id^="page-"]').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(b => { b.classList.remove('nav-active'); b.classList.add('text-gray-500'); });
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('nav-active');
+                b.classList.add('text-gray-500');
+            });
             document.getElementById('page-' + pageId).classList.remove('hidden');
             document.getElementById('nav-' + pageId).classList.add('nav-active');
             document.getElementById('nav-' + pageId).classList.remove('text-gray-500');
             if(pageId === 'chart') renderChart();
+            window.scrollTo(0,0);
         }
 
         function updateDisplay() {
@@ -193,6 +255,7 @@ async function deleteItem(id) {
         }
 
         let charts = { home: null, ni: null, guang: null };
+
         function renderChart() {
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
@@ -201,16 +264,21 @@ async function deleteItem(id) {
             let stats = { "倪家用": 0, "倪個人": 0, "光家用": 0, "光個人": 0 };
             let cats = { home: {}, ni: {}, guang: {} };
             
-            // 處理大額支出邏輯
+            // 大額支出過濾 (金額大於等於 1000)
             let bigOnes = filtered.filter(i => Number(i.amount) >= 1000).sort((a,b) => b.amount - a.amount).slice(0, 5);
 
             filtered.forEach(i => {
                 const amt = Number(i.amount);
                 const key = i.user + i.type;
                 if(stats.hasOwnProperty(key)) stats[key] += amt;
-                if(i.type === "家用") cats.home[i.category] = (cats.home[i.category] || 0) + amt;
-                else if(i.user === "倪") cats.ni[i.category] = (cats.ni[i.category] || 0) + amt;
-                else if(i.user === "光") cats.guang[i.category] = (cats.guang[i.category] || 0) + amt;
+                
+                if(i.type === "家用") {
+                    cats.home[i.category] = (cats.home[i.category] || 0) + amt;
+                } else if(i.user === "倪") {
+                    cats.ni[i.category] = (cats.ni[i.category] || 0) + amt;
+                } else if(i.user === "光") {
+                    cats.guang[i.category] = (cats.guang[i.category] || 0) + amt;
+                }
             });
 
             document.getElementById('stat-ni-home').innerText = `$${stats['倪家用'].toLocaleString()}`;
@@ -219,12 +287,23 @@ async function deleteItem(id) {
             document.getElementById('stat-guang-self').innerText = `$${stats['光個人'].toLocaleString()}`;
 
             const palette = ['#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9ead9d', '#A69CAC', '#E8A598', '#8E9AAF', '#C44536', '#7785AC'];
+
             const genConfig = (data) => ({
-                type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }] },
-                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#4a4541', font: { size: 9, weight: '700' }, boxWidth: 8 } } } }
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{ data: Object.values(data), backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }]
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#4a4541', font: { size: 9, weight: '700' }, boxWidth: 8 } } }
+                }
             });
 
-            ['home', 'ni', 'guang'].forEach(key => { if(charts[key]) charts[key].destroy(); charts[key] = new Chart(document.getElementById(key + 'Chart').getContext('2d'), genConfig(cats[key])); });
+            ['home', 'ni', 'guang'].forEach(key => {
+                if(charts[key]) charts[key].destroy();
+                charts[key] = new Chart(document.getElementById(key + 'Chart').getContext('2d'), genConfig(cats[key]));
+            });
 
             // 渲染大額支出清單
             document.getElementById('big-list').innerHTML = bigOnes.map(i => `
