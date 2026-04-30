@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家計簿</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-5">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-md">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">夫妻共同記帳</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">記錄者</label>
+                <select id="user" class="mt-1 block w-full p-2 border rounded-md">
+                    <option value="您">您</option>
+                    <option value="先生">先生</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">項目名稱</label>
+                <input type="text" id="item" placeholder="例如：底片採購、晚餐" class="mt-1 block w-full p-2 border rounded-md">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">金額</label>
+                <input type="number" id="amount" inputmode="numeric" class="mt-1 block w-full p-2 border rounded-md">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">分類</label>
+                <select id="category" class="mt-1 block w-full p-2 border rounded-md">
+                    <option>餐飲食品</option>
+                    <option>店面營運</option>
+                    <option>交通運輸</option>
+                    <option>生活雜項</option>
+                </select>
+            </div>
+
+            <button onclick="submitData()" id="submitBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">
+                送出資料
+            </button>
+        </div>
+        
+        <p id="status" class="mt-4 text-center text-sm text-gray-500"></p>
+    </div>
+
+    <script>
+        const GAS_URL = "您的_GAS_網頁應用程式網址"; // 貼上剛才部署的網址
+
+        async function submitData() {
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            
+            const payload = {
+                user: document.getElementById('user').value,
+                item: document.getElementById('item').value,
+                amount: document.getElementById('amount').value,
+                category: document.getElementById('category').value
+            };
+
+            if(!payload.item || !payload.amount) return alert('請填寫完整');
+
+            btn.disabled = true;
+            status.innerText = "傳送中...";
+
+            try {
+                // 使用 no-cors 模式避開跨網域問題
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    body: JSON.stringify(payload)
+                });
+                status.innerText = "✅ 已成功記錄到 Google 表單！";
+                document.getElementById('item').value = "";
+                document.getElementById('amount').value = "";
+            } catch (e) {
+                status.innerText = "❌ 發生錯誤：" + e;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
