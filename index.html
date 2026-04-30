@@ -143,6 +143,7 @@
         // ======================================
 
         let db = [];
+        let charts = { home: null, ni: null, guang: null }; // 圖表儲存變數
 
         // 從雲端抓取資料
         async function fetchData() {
@@ -150,10 +151,9 @@
             try {
                 const response = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({action: "get"}) });
                 db = await response.json();
-                // 排序：日期最新的在上面，若日期相同則 ID (時間戳) 大的在上面
                 db.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
                 renderHistory();
-                renderChart();
+                renderChart(); // 抓完資料立即更新分析
             } catch (e) {
                 console.error("Fetch error:", e);
                 alert("同步失敗，請檢查網路連線或 GAS 設定");
@@ -181,7 +181,7 @@
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify(entry) });
                 document.getElementById('amount').value = '';
                 document.getElementById('item').value = '';
-                await fetchData(); // 成功後自動刷新
+                await fetchData(); 
                 alert("雲端儲存成功！");
             } catch (e) {
                 alert("儲存失敗，請重試");
@@ -201,7 +201,7 @@
                 });
                 const result = await response.text();
                 if(result === "Deleted") {
-                    await fetchData();
+                    await fetchData(); // 刪除後自動觸發更新圖表
                 } else {
                     alert("刪除失敗：雲端找不到該項目");
                 }
@@ -254,21 +254,23 @@
             `).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
         }
 
-        let charts = { home: null, ni: null, guang: null };
-
+        // --- 優化後的分析函數 ---
         function renderChart() {
-            const start = document.getElementById('start-date').value;
-            const end = document.getElementById('end-date').value;
+            const startInput = document.getElementById('start-date');
+            const endInput = document.getElementById('end-date');
+            if (!startInput || !endInput) return;
+
+            const start = startInput.value;
+            const end = endInput.value;
             const filtered = db.filter(i => i.date >= start && i.date <= end);
 
             let stats = { "倪家用": 0, "倪個人": 0, "光家用": 0, "光個人": 0 };
             let cats = { home: {}, ni: {}, guang: {} };
             
-            // 大額支出過濾 (金額大於等於 1000)
             let bigOnes = filtered.filter(i => Number(i.amount) >= 1000).sort((a,b) => b.amount - a.amount).slice(0, 5);
 
             filtered.forEach(i => {
-                const amt = Number(i.amount);
+                const amt = Number(i.amount) || 0;
                 const key = i.user + i.type;
                 if(stats.hasOwnProperty(key)) stats[key] += amt;
                 
@@ -288,24 +290,41 @@
 
             const palette = ['#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9ead9d', '#A69CAC', '#E8A598', '#8E9AAF', '#C44536', '#7785AC'];
 
-            const genConfig = (data) => ({
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(data),
-                    datasets: [{ data: Object.values(data), backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }]
-                },
-                options: { 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { color: '#4a4541', font: { size: 9, weight: '700' }, boxWidth: 8 } } }
-                }
-            });
+            const genConfig = (data) => {
+                const labels = Object.keys(data);
+                const values = Object.values(data);
+                return {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels.length > 0 ? labels : ['無資料'],
+                        datasets: [{ 
+                            data: values.length > 0 ? values : [1], 
+                            backgroundColor: labels.length > 0 ? palette : ['#f0f0f0'], 
+                            borderWidth: 2, 
+                            borderColor: '#ffffff' 
+                        }]
+                    },
+                    options: { 
+                        maintainAspectRatio: false,
+                        animation: { duration: 500 },
+                        plugins: { 
+                            legend: { 
+                                display: labels.length > 0,
+                                position: 'right', 
+                                labels: { color: '#4a4541', font: { size: 9, weight: '700' }, boxWidth: 8 } 
+                            } 
+                        }
+                    }
+                };
+            };
 
+            // 確保銷毀舊圖表並重新繪製
             ['home', 'ni', 'guang'].forEach(key => {
-                if(charts[key]) charts[key].destroy();
-                charts[key] = new Chart(document.getElementById(key + 'Chart').getContext('2d'), genConfig(cats[key]));
+                const ctx = document.getElementById(key + 'Chart').getContext('2d');
+                if (charts[key]) charts[key].destroy();
+                charts[key] = new Chart(ctx, genConfig(cats[key]));
             });
 
-            // 渲染大額支出清單
             document.getElementById('big-list').innerHTML = bigOnes.map(i => `
                 <div class="flex justify-between text-[11px] py-2 border-b border-stone-100 font-bold italic">
                     <span class="text-stone-600">${i.item} (${i.user}${i.type})</span>
