@@ -3,13 +3,13 @@
   "name": "倪光家計簿：雲端記帳系統",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/5501/5501375.png",
+      "src": "./myicon.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/5501/5501375.png",
+      "src": "./myicon.png",
       "type": "image/png",
       "sizes": "192x192"
     }
