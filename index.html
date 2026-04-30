@@ -134,7 +134,26 @@
             } catch (e) { alert("儲存失敗"); }
             document.getElementById('loading').style.display = 'none';
         }
-
+async function deleteItem(id) {
+            if(!confirm('確定要從雲端刪除這筆紀錄嗎？')) return;
+            
+            document.getElementById('loading').style.display = 'flex';
+            try {
+                const response = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "delete", id: id }) 
+                });
+                const result = await response.text();
+                if(result === "Deleted") {
+                    await fetchData(); // 重新抓取資料更新畫面
+                } else {
+                    alert("刪除失敗：找不到該項目");
+                }
+            } catch (e) {
+                alert("網路連線錯誤，無法刪除");
+            }
+            document.getElementById('loading').style.display = 'none';
+        }
         window.onload = () => {
             const now = new Date();
             document.getElementById('date').valueAsDate = now;
@@ -161,8 +180,14 @@
             const list = document.getElementById('history-list');
             list.innerHTML = db.length ? db.map(item => `
                 <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
-                    <div><p class="text-[10px] text-stone-400">${item.date} · ${item.user}${item.type}</p><p>${item.item} <span class="text-[9px] font-normal text-stone-400">#${item.category}</span></p></div>
-                    <div class="text-right text-stone-800">$${Number(item.amount).toLocaleString()}</div>
+                    <div>
+                        <p class="text-[10px] text-stone-400">${item.date} · ${item.user}${item.type}</p>
+                        <p>${item.item} <span class="text-[9px] font-normal text-stone-400">#${item.category}</span></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-stone-800">$${Number(item.amount).toLocaleString()}</p>
+                        <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-400 underline font-normal mt-1">Delete</button>
+                    </div>
                 </div>
             `).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
         }
