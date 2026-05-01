@@ -239,19 +239,27 @@
 
         // 初始化
         window.onload = () => {
-    const now = new Date();
-    
-    // 取得今天的日期 (格式：YYYY-MM-DD)
-    const today = now.toLocaleDateString('sv-SE'); 
-    
-    // 取得當月 1 號的日期
-    // 邏輯：取今天的年份與月份，後面固定接 -01
-    const firstDayOfMonth = today.substring(0, 8) + '01';
+    try {
+        const now = new Date();
+        // 使用 ISO 格式最保險，避免 iOS 的 locale 格式不相容
+        const today = now.toISOString().split('T')[0];
+        const firstDayOfMonth = today.substring(0, 8) + '01';
 
-    // 設定「記帳分頁」的預設日期為今天
-    if (document.getElementById('date')) {
-        document.getElementById('date').value = today;
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        };
+        
+        setVal('date', today);
+        setVal('start-date', firstDayOfMonth);
+        setVal('end-date', today);
+
+        // 確保 fetchData 在一切就緒後才執行
+        fetchData(); 
+    } catch (e) {
+        console.error("初始化失敗:", e);
     }
+};
 
     // 設定「收支分析分頁」的預設區間：當月 1 號到今天
     if (document.getElementById('start-date')) {
