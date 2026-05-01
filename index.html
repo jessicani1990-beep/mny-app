@@ -93,18 +93,12 @@
         </div>
     </div>
 
-   <!-- 第二頁：歷史紀錄 -->
-<div id="page-history" class="hidden p-6">
-    <h2 class="text-lg font-bold mb-4 tracking-widest text-center">歷史帳項</h2>
-
-    <div class="flex items-center justify-between gap-2 mb-6 bg-white p-3 rounded-xl shadow-sm border border-stone-200">
-        <input type="date" id="filter-start" onchange="renderHistory()" class="text-xs outline-none bg-transparent">
-        <span class="text-xs text-stone-400">至</span>
-        <input type="date" id="filter-end" onchange="renderHistory()" class="text-xs outline-none bg-transparent">
+    <!-- 第二頁：歷史紀錄 -->
+    <div id="page-history" class="hidden p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
+    
+        <div id="history-list" class="space-y-4"></div>
     </div>
-
-    <div id="history-list" class="space-y-4"></div>
-</div>
 
     <!-- 第三頁：分析報告 -->
     <div id="page-chart" class="hidden p-6 text-stone-700">
@@ -289,22 +283,19 @@
         }
 
         function renderHistory() {
-    const startEl = document.getElementById('filter-start');
-    const endEl = document.getElementById('filter-end');
-    const start = startEl ? startEl.value : '';
-    const end = endEl ? endEl.value : '';
-
-    const filtered = (start && end)
-        ? db.filter(i => {
-            let d = String(i.date || '').split('T')[0].substring(0, 10).replace(/\//g, '-');
-            return d >= start && d <= end;
-          })
-        : db;
-
     const list = document.getElementById('history-list');
-    list.innerHTML = filtered.length ? filtered.map(item => {
+    list.innerHTML = db.length ? db.map(item => {
+        // --- 核心修正：強制當作文字處理 ---
         let rawDate = String(item.date || '');
-        let displayDate = rawDate.split('T')[0].substring(0, 10).replace(/\//g, '-');
+        
+        // 如果文字裡包含 T (代表有時間戳記)，我們只切取前面的日期
+        // 如果沒有 T，我們也只取前 10 個字 (YYYY-MM-DD)
+        let displayDate = rawDate.split('T')[0].substring(0, 10);
+        
+        // 額外保險：如果發現斜線，統一換成橫線
+        displayDate = displayDate.replace(/\//g, '-');
+        // -------------------------------
+
         return `
         <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
             <div>
@@ -317,8 +308,9 @@
             </div>
         </div>
         `;
-    }).join('') : '<p class="text-center text-stone-400 mt-10">此區間無紀錄</p>';
+    }).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
 }
+
         // --- 優化後的分析函數 ---
         function renderChart() {
             const startInput = document.getElementById('start-date');
