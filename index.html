@@ -303,47 +303,62 @@
             document.getElementById('display-type').innerText = document.getElementById('type').value;
         }
 
-        function renderHistory() {
+       function renderHistory() {
     const list = document.getElementById('history-list');
-    const startInput = document.getElementById('filter-start').value; // 格式: YYYY-MM-DD
-    const endInput = document.getElementById('filter-end').value;     // 格式: YYYY-MM-DD
+    const startInput = document.getElementById('filter-start').value; 
+    const endInput = document.getElementById('filter-end').value;
 
-    if (!window.db || window.db.length === 0) {
-        list.innerHTML = '<p class="text-center text-stone-400 mt-10">讀取中或尚無紀錄...</p>';
+    // 檢查全域資料庫是否存在，如果不存在就嘗試從本地快取抓取一次
+    let currentData = window.db;
+    if (!currentData || currentData.length === 0) {
+        const cached = localStorage.getItem('ni-guang-data'); // 假設您的快取名稱
+        if (cached) {
+            currentData = JSON.parse(cached);
+            window.db = currentData;
+        }
+    }
+
+    if (!currentData || currentData.length === 0) {
+        list.innerHTML = '<p class="text-center text-stone-400 mt-10">資料載入中，請稍候...<br><span class="text-[10px]">若持續顯示，請點擊強制同步</span></p>';
         return;
     }
 
-    // 進行篩選連動
-    const filteredDb = window.db.filter(item => {
-        // 1. 處理資料庫中的日期 (確保只拿前 10 位 YYYY-MM-DD)
-        const itemDate = String(item.date || '').split('T')[0].substring(0, 10).replace(/\//g, '-');
+    // 篩選邏輯
+    const filteredDb = currentData.filter(item => {
+        // 關鍵：統一處理日期格式，並過濾掉標題列
+        if (item.date === "date") return false; 
         
-        // 2. 判斷邏輯
-        // 如果開始日期有填，資料日期必須 >= 開始日期
+        // 確保日期字串是 YYYY-MM-DD
+        let itemDate = String(item.date || '').trim().split(' ')[0].split('T')[0].replace(/\//g, '-');
+        
+        // 如果抓到的日期長度不足，嘗試補齊（預防 2026-5-1 變成 2026-05-01）
+        if (itemDate.length > 0 && itemDate.length < 10) {
+            const parts = itemDate.split('-');
+            if (parts.length === 3) {
+                itemDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            }
+        }
+
         const matchStart = startInput ? (itemDate >= startInput) : true;
-        // 如果結束日期有填，資料日期必須 <= 結束日期
         const matchEnd = endInput ? (itemDate <= endInput) : true;
         
         return matchStart && matchEnd;
     });
 
-    // 渲染畫面
     if (filteredDb.length === 0) {
         list.innerHTML = '<p class="text-center text-stone-400 mt-10">此區間尚無紀錄</p>';
     } else {
         list.innerHTML = filteredDb.map(item => {
-            let rawDate = String(item.date || '');
-            let displayDate = rawDate.split('T')[0].substring(0, 10).replace(/\//g, '-');
-            
+            let displayDate = String(item.date || '').split(' ')[0].split('T')[0].replace(/\//g, '-');
             return `
-            <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
+            <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3 shadow-sm bg-white rounded-r-lg">
                 <div>
-                    <p class="text-[10px] text-stone-400">${displayDate} · ${item.user}${item.type}</p>
-                    <p>${item.item} <span class="text-[9px] font-normal text-stone-400">#${item.category}</span></p>
+                    <p class="text-[10px] text-stone-500">${displayDate} · ${item.user || ''}${item.type || ''}</p>
+                    <p class="text-stone-800">${item.item || '未命名'} <span class="text-[9px] font-normal text-stone-400">#${item.category || ''}</span></p>
                 </div>
                 <div class="text-right">
-                    <p class="text-stone-800">$${Number(item.amount).toLocaleString()}</p>
-                    <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-400 underline font-normal mt-1">Delete</button>
+                    <p class="text-stone-800">$${Number(item.amount || 0).toLocaleString()}</p>
+                    <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-400 underline font-normal mt-1 active:text-red-600">Delete</button>
                 </div>
             </div>
             `;
