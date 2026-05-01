@@ -262,10 +262,14 @@
 
         function renderHistory() {
             const list = document.getElementById('history-list');
-            list.innerHTML = db.length ? db.map(item => `
+            list.innerHTML = db.length ? db.map(item => {
+                // 修正：只取日期的前 10 個字元 (YYYY-MM-DD)，排除可能的時間戳記
+                const displayDate = item.date ? item.date.toString().substring(0, 10) : '無日期';
+                
+                return `
                 <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
                     <div>
-                        <p class="text-[10px] text-stone-400">${item.date} · ${item.user}${item.type}</p>
+                        <p class="text-[10px] text-stone-400">${displayDate} · ${item.user}${item.type}</p>
                         <p>${item.item} <span class="text-[9px] font-normal text-stone-400">#${item.category}</span></p>
                     </div>
                     <div class="text-right">
@@ -273,7 +277,8 @@
                         <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-400 underline font-normal mt-1">Delete</button>
                     </div>
                 </div>
-            `).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
+                `;
+            }).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
         }
 
         // --- 優化後的分析函數 ---
