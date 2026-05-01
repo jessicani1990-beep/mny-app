@@ -93,25 +93,12 @@
         </div>
     </div>
 
-   <!-- 第二頁：歷史紀錄 -->
-<div id="page-history" class="hidden p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold text-stone-800">歷史紀錄</h2>
-        <button onclick="syncData()" class="text-xs bg-stone-200 px-3 py-1 rounded-full active:bg-stone-300 transition-colors">立即強制同步雲端</button>
+    <!-- 第二頁：歷史紀錄 -->
+    <div id="page-history" class="hidden p-6">
+        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
+    
+        <div id="history-list" class="space-y-4"></div>
     </div>
-
-    <!-- 複製分析頁的日期篩選器結構 -->
-    <div class="bg-stone-100 p-4 rounded-xl mb-6 flex items-center gap-2 shadow-inner">
-        <input type="date" id="history-filter-start" onchange="renderHistory()" class="bg-transparent text-sm font-bold text-stone-600 focus:outline-none flex-1">
-        <span class="text-stone-400">至</span>
-        <input type="date" id="history-filter-end" onchange="renderHistory()" class="bg-transparent text-sm font-bold text-stone-600 focus:outline-none flex-1">
-    </div>
-
-    <!-- 紀錄顯示區域 -->
-    <div id="history-list" class="space-y-3 pb-20">
-        <!-- 紀錄會由 JS 動態生成在此 -->
-    </div>
-</div>
 
     <!-- 第三頁：分析報告 -->
     <div id="page-chart" class="hidden p-6 text-stone-700">
@@ -243,22 +230,8 @@
         }
 
         // 初始化
-       window.onload = () => {
-    const now = new Date(); // 必須定義 now
-    const today = now.toISOString().split('T')[0];
-    const firstDayOfMonth = today.substring(0, 8) + '01';
-
-    // 初始化所有日期的預設值
-    const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
-    
-    setVal('date', today);                 // 記帳頁：今天
-    setVal('start-date', firstDayOfMonth); // 分析頁：本月1號
-    setVal('end-date', today);            // 分析頁：今天
-    setVal('history-filter-start', firstDayOfMonth); // 紀錄頁：本月1號
-    setVal('history-filter-end', today);   // 紀錄頁：今天
-
-    fetchData(); // 啟動時從雲端抓取一次資料
-};
+        window.onload = () => {
+    const now = new Date();
     
     // 取得今天的日期 (格式：YYYY-MM-DD)
     const today = now.toLocaleDateString('sv-SE'); 
@@ -311,56 +284,33 @@
 
         function renderHistory() {
     const list = document.getElementById('history-list');
-    if (!list) return;
+    list.innerHTML = db.length ? db.map(item => {
+        // --- 核心修正：強制當作文字處理 ---
+        let rawDate = String(item.date || '');
+        
+        // 如果文字裡包含 T (代表有時間戳記)，我們只切取前面的日期
+        // 如果沒有 T，我們也只取前 10 個字 (YYYY-MM-DD)
+        let displayDate = rawDate.split('T')[0].substring(0, 10);
+        
+        // 額外保險：如果發現斜線，統一換成橫線
+        displayDate = displayDate.replace(/\//g, '-');
+        // -------------------------------
 
-    const startInput = document.getElementById('history-filter-start').value; 
-    const endInput = document.getElementById('history-filter-end').value;
-
-    if (!db || db.length === 0) {
-        list.innerHTML = '<p class="text-center text-stone-400 mt-10 text-sm font-normal">尚無資料，請先新增帳目或同步雲端</p>';
-        return;
-    }
-
-    const filteredDb = db.filter(item => {
-        if (!item.date) return false;
-        // 處理格式避免 undefined 或 null
-        const itemDate = item.date.toString().substring(0, 10); 
-        const matchStart = startInput ? (itemDate >= startInput) : true;
-        const matchEnd = endInput ? (itemDate <= endInput) : true;
-        return matchStart && matchEnd;
-    });
-
-    if (filteredDb.length === 0) {
-        list.innerHTML = '<p class="text-center text-stone-400 mt-10 text-sm font-normal">此日期區間尚無紀錄</p>';
-    } else {
-        list.innerHTML = filteredDb.map(item => {
-            const d = new Date(item.date);
-            const dateStr = isNaN(d.getTime()) ? "無日期" : `${d.getMonth()+1}/${d.getDate()}`;
-            // 注意：您的資料庫中若沒有 'type' 欄位為 '支出'，顏色會永遠是綠色
-            const isExpense = (item.type !== '收入'); // 假設除了收入外都是支出
-
-            return `
-            <div class="bg-white p-4 flex justify-between items-center border-l-4 ${isExpense ? 'border-red-200' : 'border-green-200'} font-bold text-sm shadow-sm rounded-r-lg mb-1">
-                <div class="flex items-center gap-3">
-                    <div class="text-[10px] text-stone-400 font-normal leading-tight text-center">
-                        ${dateStr}<br>${item.user || ''}
-                    </div>
-                    <div>
-                        <p class="text-stone-800">${item.item || '未命名'}</p>
-                        <p class="text-[10px] font-normal text-stone-400">${item.category || ''}</p>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <p class="${isExpense ? 'text-red-500' : 'text-green-600'}">
-                        $${Number(item.amount || 0).toLocaleString()}
-                    </p>
-                    <button onclick="deleteItem('${item.id}')" class="text-[10px] text-stone-300 font-normal mt-1 active:text-red-400">刪除</button>
-                </div>
+        return `
+        <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
+            <div>
+                <p class="text-[10px] text-stone-400">${displayDate} · ${item.user}${item.type}</p>
+                <p>${item.item} <span class="text-[9px] font-normal text-stone-400">#${item.category}</span></p>
             </div>
-            `;
-        }).join('');
-    }
+            <div class="text-right">
+                <p class="text-stone-800">$${Number(item.amount).toLocaleString()}</p>
+                <button onclick="deleteItem('${item.id}')" class="text-[10px] text-red-400 underline font-normal mt-1">Delete</button>
+            </div>
+        </div>
+        `;
+    }).join('') : '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
 }
+
         // --- 優化後的分析函數 ---
         function renderChart() {
             const startInput = document.getElementById('start-date');
@@ -442,3 +392,4 @@
     </script>
 </body>
 </html>
+
