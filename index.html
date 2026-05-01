@@ -96,20 +96,6 @@
     <!-- 第二頁：歷史紀錄 -->
     <div id="page-history" class="hidden p-6">
         <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
-       <!-- 歷史紀錄篩選區 -->
-<div class="bg-stone-100 p-3 mb-4 rounded-lg flex gap-2 items-end">
-    <div class="flex-1">
-        <label class="text-[10px] text-stone-500 block mb-1">開始日期</label>
-        <!-- 加入 min="2020-01-01" 讓瀏覽器知道有以往年份可以選 -->
-        <input type="date" id="filter-start" 
-               min="2020-01-01" max="2030-12-31"
-               class="w-full p-2 text-sm rounded border-none bg-white">
-    </div>
-    <div class="flex-1">
-        <label class="text-[10px] text-stone-500 block mb-1">結束日期</label>
-        <input type="date" id="filter-end" 
-               min="2020-01-01" max="2030-12-31"
-               class="w-full p-2 text-sm rounded border-none bg-white">
     </div>
     <button onclick="renderHistory()" class="bg-stone-800 text-white px-4 py-2 rounded text-sm active:bg-stone-600">
         篩選
