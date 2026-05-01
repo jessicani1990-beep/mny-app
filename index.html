@@ -264,7 +264,9 @@
             // 在 renderHistory 的循環中修改這一段
 const rawDate = item.date ? item.date.toString() : '';
 // 排除 T 之後的時間字串，只拿前十位，並確保不被轉成 Date 物件產生時區差
-const displayDate = rawDate.split('T')[0].substring(0, 10);
+const displayDate = rawDate.includes('T') 
+    ? rawDate.split('T')[0] 
+    : rawDate.substring(0, 10);
                 
                 return `
                 <div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">
