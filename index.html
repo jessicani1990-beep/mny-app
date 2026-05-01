@@ -435,11 +435,13 @@
             document.getElementById('full-detail-list').innerHTML = detailHtml || '<p class="text-[10px] text-stone-400 italic text-center py-10">選定期間內無任何紀錄</p>';
         }
             // 確保銷毀舊圖表並重新繪製
-            ['home', 'ni', 'guang'].forEach(key => {
-                const ctx = document.getElementById(key + 'Chart').getContext('2d');
-                if (charts[key]) charts[key].destroy();
-                charts[key] = new Chart(ctx, genConfig(cats[key]));
-            });
+           ['home', 'ni', 'guang'].forEach(key => {
+    const canvas = document.getElementById(key + 'Chart');
+    if (!canvas) return; // 如果找不到 Canvas，跳過，不讓程式崩潰
+    const ctx = canvas.getContext('2d');
+    if (charts[key]) charts[key].destroy();
+    charts[key] = new Chart(ctx, genConfig(cats[key]));
+});
 
             document.getElementById('big-list').innerHTML = bigOnes.map(i => `
                 <div class="flex justify-between text-[11px] py-2 border-b border-stone-100 font-bold italic">
