@@ -93,12 +93,25 @@
         </div>
     </div>
 
-    <!-- 第二頁：歷史紀錄 -->
-    <div id="page-history" class="hidden p-6">
-        <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
-    
-        <div id="history-list" class="space-y-4"></div>
+   <!-- 第二頁：歷史紀錄 -->
+<div id="page2" class="page-content hidden">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-stone-800">歷史紀錄</h2>
+        <button onclick="syncData()" class="text-xs bg-stone-200 px-3 py-1 rounded-full active:bg-stone-300 transition-colors">立即強制同步雲端</button>
     </div>
+
+    <!-- 複製分析頁的日期篩選器結構 -->
+    <div class="bg-stone-100 p-4 rounded-xl mb-6 flex items-center gap-2 shadow-inner">
+        <input type="date" id="history-filter-start" onchange="renderHistory()" class="bg-transparent text-sm font-bold text-stone-600 focus:outline-none flex-1">
+        <span class="text-stone-400">至</span>
+        <input type="date" id="history-filter-end" onchange="renderHistory()" class="bg-transparent text-sm font-bold text-stone-600 focus:outline-none flex-1">
+    </div>
+
+    <!-- 紀錄顯示區域 -->
+    <div id="history-list" class="space-y-3 pb-20">
+        <!-- 紀錄會由 JS 動態生成在此 -->
+    </div>
+</div>
 
     <!-- 第三頁：分析報告 -->
     <div id="page-chart" class="hidden p-6 text-stone-700">
