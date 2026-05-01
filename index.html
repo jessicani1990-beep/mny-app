@@ -231,9 +231,14 @@
         // 初始化
         window.onload = () => {
             const now = new Date();
-            document.getElementById('date').valueAsDate = now;
-            document.getElementById('start-date').valueAsDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            document.getElementById('end-date').valueAsDate = now;
+            // 修正：確保抓取的是在地時間的 YYYY-MM-DD 格式
+            const today = now.toLocaleDateString('sv-SE'); 
+            document.getElementById('date').value = today;
+            
+            // 分析頁面的預設範圍（本月 1 號到今天）
+            document.getElementById('start-date').value = today.substring(0, 8) + '01';
+            document.getElementById('end-date').value = today;
+            
             fetchData();
         };
 
