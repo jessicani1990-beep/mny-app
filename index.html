@@ -244,7 +244,14 @@
 
         // 初始化
         window.onload = () => {
-    const now = new Date();
+  function initDateFilters() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    document.getElementById('history-filter-start').value = firstDay;
+    document.getElementById('history-filter-end').value = lastDay;
+}
     
     // 取得今天的日期 (格式：YYYY-MM-DD)
     const today = now.toLocaleDateString('sv-SE'); 
