@@ -245,17 +245,38 @@
 
         // 初始化
         window.onload = () => {
-            const now = new Date();
-            // 修正：確保抓取的是在地時間的 YYYY-MM-DD 格式
-            const today = now.toLocaleDateString('sv-SE'); 
-            document.getElementById('date').value = today;
-            
-            // 分析頁面的預設範圍（本月 1 號到今天）
-            document.getElementById('start-date').value = today.substring(0, 8) + '01';
-            document.getElementById('end-date').value = today;
-            
-            fetchData();
-        };
+    const now = new Date();
+    
+    // 取得今天的日期 (格式：YYYY-MM-DD)
+    const today = now.toLocaleDateString('sv-SE'); 
+    
+    // 取得當月 1 號的日期
+    // 邏輯：取今天的年份與月份，後面固定接 -01
+    const firstDayOfMonth = today.substring(0, 8) + '01';
+
+    // 設定「記帳分頁」的預設日期為今天
+    if (document.getElementById('date')) {
+        document.getElementById('date').value = today;
+    }
+
+    // 設定「收支分析分頁」的預設區間：當月 1 號到今天
+    if (document.getElementById('start-date')) {
+        document.getElementById('start-date').value = firstDayOfMonth;
+    }
+    if (document.getElementById('end-date')) {
+        document.getElementById('end-date').value = today;
+    }
+
+    // 設定「歷史紀錄分頁」的預設區間 (如果您剛才也有加的話)
+    if (document.getElementById('filter-start')) {
+        document.getElementById('filter-start').value = firstDayOfMonth;
+    }
+    if (document.getElementById('filter-end')) {
+        document.getElementById('filter-end').value = today;
+    }
+
+    fetchData(); // 從 Google 試算表抓取資料
+};
 
         function showPage(pageId) {
             document.querySelectorAll('div[id^="page-"]').forEach(p => p.classList.add('hidden'));
