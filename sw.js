@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ni-guang-cache-v21'; // 改名後，手機會發現版本更新，從而抓取新圖片
+const CACHE_NAME = 'ni-guang-cache-v22'; // 改名後，手機會發現版本更新，從而抓取新圖片
 const urlsToCache = [
   './',
   './index.html',
