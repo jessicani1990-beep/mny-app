@@ -23,6 +23,37 @@
     .stat-box { background: #fdfcfb; border-radius: 12px; padding: 14px; border-left: 5px solid #8a9a89; border-top: 1px solid #eee; }
     .chart-container { position: relative; height: 220px; width: 100%; }
     select, input { background-color: transparent !important; }
+
+    /* 分類標籤篩選器 */
+    .cat-tag {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1.5px solid #c7c2bd;
+        color: #7a736d;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .cat-tag.active {
+        background-color: #8a9a89;
+        border-color: #8a9a89;
+        color: white;
+    }
+    .cat-tag:active { transform: scale(0.95); }
+
+    /* 歷史頁篩選區 */
+    .filter-bar {
+        background: white;
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #ede9e5;
+        margin-bottom: 20px;
+    }
 </style>
 </head>
 <body class="pb-24">
@@ -100,7 +131,21 @@
 
 <!-- 第二頁：歷史紀錄 -->
 <div id="page-history" class="hidden p-6">
-    <h2 class="text-lg font-bold mb-6 tracking-widest text-center">歷史帳項</h2>
+    <h2 class="text-lg font-bold mb-4 tracking-widest text-center">歷史帳項</h2>
+
+    <!-- ★ 新增：日期篩選器 -->
+    <div class="filter-bar">
+        <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">日期區間</p>
+        <div class="flex items-center gap-2">
+            <input type="date" id="hist-start" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
+            <span class="text-xs text-stone-300 font-bold">—</span>
+            <input type="date" id="hist-end" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
+        </div>
+        <div class="flex justify-end mt-2">
+            <button onclick="resetHistFilter()" class="text-[10px] text-stone-400 underline">重設</button>
+        </div>
+    </div>
+
     <div id="history-list" class="space-y-4"></div>
 </div>
 
@@ -142,6 +187,15 @@
 
         <div class="mt-8 pb-10">
             <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Full Details (All Entries)</h3>
+
+            <!-- ★ 新增：分類篩選標籤 -->
+            <div class="mb-3">
+                <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">分類篩選</p>
+                <div id="cat-filter-tags" class="flex flex-wrap gap-2">
+                    <!-- 由 JS 動態產生 -->
+                </div>
+            </div>
+
             <div id="full-detail-list" class="space-y-2"></div>
         </div>
     </div>
@@ -173,15 +227,63 @@ var GAS_URL = "https://script.google.com/macros/s/AKfycbw4f7HKvhbqqQZrRMj3fKLFYn
 var db = [];
 var charts = { home: null, ni: null, guang: null };
 
+// ★ 分類清單（與記帳頁一致）
+var ALL_CATEGORIES = ['飲食','日常','交通','醫療','娛樂','治裝','保險','寵物','運動','其他'];
+
+// ★ 目前選取的 Full Details 分類篩選（空陣列 = 全部）
+var selectedCats = [];
+
+// ======= 初始化分類標籤 =======
+function initCatTags() {
+    var container = document.getElementById('cat-filter-tags');
+    // 「全部」標籤
+    var allTag = document.createElement('span');
+    allTag.className = 'cat-tag active';
+    allTag.dataset.cat = '__all__';
+    allTag.textContent = '全部';
+    allTag.onclick = function() { toggleCatTag('__all__'); };
+    container.appendChild(allTag);
+
+    ALL_CATEGORIES.forEach(function(cat) {
+        var tag = document.createElement('span');
+        tag.className = 'cat-tag';
+        tag.dataset.cat = cat;
+        tag.textContent = cat;
+        tag.onclick = function() { toggleCatTag(cat); };
+        container.appendChild(tag);
+    });
+}
+
+function toggleCatTag(cat) {
+    if (cat === '__all__') {
+        selectedCats = [];
+    } else {
+        var idx = selectedCats.indexOf(cat);
+        if (idx >= 0) {
+            selectedCats.splice(idx, 1);
+        } else {
+            selectedCats.push(cat);
+        }
+    }
+    // 更新標籤樣式
+    var tags = document.querySelectorAll('#cat-filter-tags .cat-tag');
+    tags.forEach(function(tag) {
+        var c = tag.dataset.cat;
+        if (c === '__all__') {
+            tag.className = 'cat-tag' + (selectedCats.length === 0 ? ' active' : '');
+        } else {
+            tag.className = 'cat-tag' + (selectedCats.indexOf(c) >= 0 ? ' active' : '');
+        }
+    });
+    renderFullDetails();
+}
+
 // ======= 工具函數：安全取得日期字串 YYYY-MM-DD =======
 function safeDate(val) {
     if (!val) return '';
     var s = String(val);
-    // 若含有 T（ISO 格式）只取前段
     s = s.split('T')[0];
-    // 取前 10 碼
     s = s.substring(0, 10);
-    // 斜線轉橫線
     s = s.replace(/\//g, '-');
     return s;
 }
@@ -285,36 +387,41 @@ function deleteItem(id) {
         });
 }
 
+// ======= 重設歷史篩選 =======
+function resetHistFilter() {
+    document.getElementById('hist-start').value = getFirstDayOfMonthStr();
+    document.getElementById('hist-end').value = getTodayStr();
+    renderHistory();
+}
+
 // 初始化
-        window.onload = () => {
-            try {
-                const now = new Date();
-                // 取得台灣時間的日期字串 (YYYY-MM-DD)
-                const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-                const firstDayOfMonth = today.substring(0, 8) + '01';
+window.onload = function() {
+    try {
+        var now = new Date();
+        var today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        var firstDayOfMonth = today.substring(0, 8) + '01';
 
-                const setVal = (id, val) => {
-                    const el = document.getElementById(id);
-                    if (el) el.value = val;
-                };
-
-                // 問題 1：設定「記帳頁面」的日期為當天
-                setVal('date', today);
-
-                // 問題 2：設定「分析頁面」的日期區間為當月一號到當天
-                setVal('start-date', firstDayOfMonth);
-                setVal('end-date', today);
-
-                // 如果有歷史紀錄的濾網也要設 (選用)
-                setVal('filter-start', firstDayOfMonth);
-                setVal('filter-end', today);
-
-                // 確保所有欄位填入後，再開始抓取雲端資料
-                fetchData(); 
-            } catch (e) {
-                console.error("初始化失敗:", e);
-            }
+        var setVal = function(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.value = val;
         };
+
+        setVal('date', today);
+        setVal('start-date', firstDayOfMonth);
+        setVal('end-date', today);
+
+        // ★ 歷史頁日期預設值
+        setVal('hist-start', firstDayOfMonth);
+        setVal('hist-end', today);
+
+        // ★ 初始化分類標籤
+        initCatTags();
+
+        fetchData();
+    } catch (e) {
+        console.error("初始化失敗:", e);
+    }
+};
 
 // ======= 頁面切換 =======
 function showPage(pageId) {
@@ -341,16 +448,30 @@ function updateDisplay() {
     document.getElementById('display-type').innerText = document.getElementById('type').value;
 }
 
-// ======= 渲染歷史紀錄 =======
+// ======= 渲染歷史紀錄（含日期篩選）=======
 function renderHistory() {
     var list = document.getElementById('history-list');
-    if (!db.length) {
-        list.innerHTML = '<p class="text-center text-stone-400 mt-10">尚無紀錄</p>';
+
+    // ★ 讀取篩選日期
+    var histStart = document.getElementById('hist-start') ? document.getElementById('hist-start').value : '';
+    var histEnd = document.getElementById('hist-end') ? document.getElementById('hist-end').value : '';
+
+    // ★ 過濾
+    var filtered = db.filter(function(item) {
+        var d = safeDate(item.date);
+        if (histStart && d < histStart) return false;
+        if (histEnd && d > histEnd) return false;
+        return true;
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = '<p class="text-center text-stone-400 mt-10">該區間無紀錄</p>';
         return;
     }
+
     var html = '';
-    for (var i = 0; i < db.length; i++) {
-        var item = db[i];
+    for (var i = 0; i < filtered.length; i++) {
+        var item = filtered[i];
         var displayDate = safeDate(item.date);
         html += '<div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">' +
             '<div>' +
@@ -366,6 +487,50 @@ function renderHistory() {
     list.innerHTML = html;
 }
 
+// ======= 渲染 Full Details（含分類篩選）=======
+function renderFullDetails() {
+    var start = document.getElementById('start-date').value;
+    var end = document.getElementById('end-date').value;
+
+    var filtered = [];
+    for (var i = 0; i < db.length; i++) {
+        var d = safeDate(db[i].date);
+        if (d >= start && d <= end) filtered.push(db[i]);
+    }
+
+    // ★ 分類過濾
+    if (selectedCats.length > 0) {
+        filtered = filtered.filter(function(item) {
+            return selectedCats.indexOf(item.category) >= 0;
+        });
+    }
+
+    var sortedFiltered = filtered.slice().sort(function(a, b) {
+        var da = safeDate(a.date);
+        var db2 = safeDate(b.date);
+        if (db2 > da) return 1;
+        if (db2 < da) return -1;
+        return 0;
+    });
+
+    var detailHtml = '';
+    for (var f = 0; f < sortedFiltered.length; f++) {
+        var fi = sortedFiltered[f];
+        var dateStr = safeDate(fi.date);
+        detailHtml += '<div class="flex justify-between items-center bg-white/50 p-3 rounded-lg border border-stone-100 shadow-sm text-xs mb-2">' +
+            '<div class="flex flex-col">' +
+            '<span class="text-[9px] text-stone-400 font-normal">' + dateStr + ' · ' + fi.user + fi.type + '</span>' +
+            '<span class="text-stone-700 font-bold">' + fi.item + '</span>' +
+            '</div>' +
+            '<div class="text-right">' +
+            '<span class="text-stone-800 font-bold">$' + Number(fi.amount).toLocaleString() + '</span>' +
+            '<div class="text-[9px] text-stone-400 font-normal">' + fi.category + '</div>' +
+            '</div>' +
+            '</div>';
+    }
+    document.getElementById('full-detail-list').innerHTML = detailHtml || '<p class="text-[10px] text-stone-400 italic text-center py-10">選定條件內無任何紀錄</p>';
+}
+
 // ======= 渲染分析圖表 =======
 function renderChart() {
     var startInput = document.getElementById('start-date');
@@ -375,7 +540,6 @@ function renderChart() {
     var start = startInput.value;
     var end = endInput.value;
 
-    // 過濾資料
     var filtered = [];
     for (var i = 0; i < db.length; i++) {
         var d = safeDate(db[i].date);
@@ -384,7 +548,6 @@ function renderChart() {
         }
     }
 
-    // 統計
     var stats = { "倪家用": 0, "倪個人": 0, "光家用": 0, "光個人": 0 };
     var cats = { home: {}, ni: {}, guang: {} };
 
@@ -404,13 +567,11 @@ function renderChart() {
         }
     }
 
-    // 更新卡片數字
     document.getElementById('stat-ni-home').innerText = '$' + stats['倪家用'].toLocaleString();
     document.getElementById('stat-ni-self').innerText = '$' + stats['倪個人'].toLocaleString();
     document.getElementById('stat-guang-home').innerText = '$' + stats['光家用'].toLocaleString();
     document.getElementById('stat-guang-self').innerText = '$' + stats['光個人'].toLocaleString();
 
-    // 圓餅圖
     var palette = ['#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9ead9d', '#A69CAC', '#E8A598', '#8E9AAF', '#C44536', '#7785AC'];
 
     function genConfig(data) {
@@ -468,31 +629,8 @@ function renderChart() {
     }
     document.getElementById('big-list').innerHTML = bigHtml || '<p class="text-[10px] text-stone-400 italic">期間內無大額支出</p>';
 
-    // Full Details
-    var sortedFiltered = filtered.slice().sort(function(a, b) {
-        var da = safeDate(a.date);
-        var db2 = safeDate(b.date);
-        if (db2 > da) return 1;
-        if (db2 < da) return -1;
-        return 0;
-    });
-
-    var detailHtml = '';
-    for (var f = 0; f < sortedFiltered.length; f++) {
-        var fi = sortedFiltered[f];
-        var dateStr = safeDate(fi.date);
-        detailHtml += '<div class="flex justify-between items-center bg-white/50 p-3 rounded-lg border border-stone-100 shadow-sm text-xs mb-2">' +
-            '<div class="flex flex-col">' +
-            '<span class="text-[9px] text-stone-400 font-normal">' + dateStr + ' · ' + fi.user + fi.type + '</span>' +
-            '<span class="text-stone-700 font-bold">' + fi.item + '</span>' +
-            '</div>' +
-            '<div class="text-right">' +
-            '<span class="text-stone-800 font-bold">$' + Number(fi.amount).toLocaleString() + '</span>' +
-            '<div class="text-[9px] text-stone-400 font-normal">' + fi.category + '</div>' +
-            '</div>' +
-            '</div>';
-    }
-    document.getElementById('full-detail-list').innerHTML = detailHtml || '<p class="text-[10px] text-stone-400 italic text-center py-10">選定期間內無任何紀錄</p>';
+    // Full Details（呼叫獨立函數，保留分類篩選狀態）
+    renderFullDetails();
 }
 </script>
 </body>
