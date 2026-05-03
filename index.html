@@ -22,49 +22,91 @@
     .nav-active { color: #7a8a79; font-weight: 700; border-top: 2px solid #7a8a79; }
     .stat-box { background: #fdfcfb; border-radius: 12px; padding: 14px; border-left: 5px solid #8a9a89; border-top: 1px solid #eee; }
     .chart-container { position: relative; height: 220px; width: 100%; }
+    .trend-container { position: relative; height: 180px; width: 100%; }
     select, input { background-color: transparent !important; }
 
-    /* 分類標籤篩選器 */
-    .cat-tag {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        border: 1.5px solid #c7c2bd;
-        color: #7a736d;
-        cursor: pointer;
-        transition: all 0.15s;
-        white-space: nowrap;
-        user-select: none;
-    }
-    .cat-tag.active {
-        background-color: #8a9a89;
-        border-color: #8a9a89;
-        color: white;
-    }
-    .cat-tag:active { transform: scale(0.95); }
+    .chip { display:inline-block; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; border:1.5px solid #c7c2bd; color:#7a736d; cursor:pointer; transition:all 0.15s; white-space:nowrap; user-select:none; }
+    .chip.active { background-color:#8a9a89; border-color:#8a9a89; color:white; }
+    .chip:active { transform:scale(0.95); }
 
-    /* 歷史頁篩選區 */
-    .filter-bar {
-        background: white;
-        border-radius: 16px;
-        padding: 14px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #ede9e5;
-        margin-bottom: 20px;
-    }
+    .filter-bar { background:white; border-radius:16px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04); border:1px solid #ede9e5; margin-bottom:16px; }
+
+    .period-btn { flex:1; padding:6px 0; font-size:11px; font-weight:700; border-radius:999px; border:1.5px solid #c7c2bd; color:#7a736d; background:transparent; cursor:pointer; transition:all 0.15s; }
+    .period-btn.active { background:#8a9a89; border-color:#8a9a89; color:white; }
+    .period-btn:active { transform:scale(0.96); }
+
+    #toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#3d3a37; color:white; padding:10px 22px; border-radius:999px; font-size:13px; font-weight:700; opacity:0; pointer-events:none; transition:all 0.3s; z-index:2000; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    #edit-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; align-items:flex-end; justify-content:center; }
+    #edit-modal.open { display:flex; }
+    #edit-modal-inner { background:#fff; border-radius:24px 24px 0 0; padding:24px; width:100%; max-width:480px; }
+
+    #offline-badge { display:none; position:fixed; top:14px; right:14px; background:#e07a5f; color:white; font-size:10px; font-weight:700; padding:4px 10px; border-radius:999px; z-index:1500; }
+    #offline-badge.show { display:block; }
 </style>
 </head>
 <body class="pb-24">
 
-<!-- 全域載入動畫 -->
+<div id="toast"></div>
+<div id="offline-badge">📶 離線佇列 <span id="offline-count">0</span> 筆</div>
+
 <div id="loading" class="loading font-bold text-stone-500">
     <div class="mb-2">⏳</div>
     <span>雲端同步中...</span>
 </div>
 
-<!-- 底部導覽列 -->
+<!-- Edit Modal -->
+<div id="edit-modal">
+  <div id="edit-modal-inner">
+    <h3 class="text-sm font-bold tracking-widest mb-4 text-center text-stone-600">編輯紀錄</h3>
+    <input type="hidden" id="edit-id">
+    <div class="space-y-4">
+      <div>
+        <label class="text-[10px] font-bold text-stone-500 uppercase">日期</label>
+        <input type="date" id="edit-date" class="w-full border-b py-2 text-sm outline-none">
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="text-[10px] font-bold text-stone-500 uppercase">紀錄者</label>
+          <select id="edit-user" class="w-full border-b py-2 text-sm outline-none">
+            <option value="倪">倪</option><option value="光">光</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="text-[10px] font-bold text-stone-500 uppercase">屬性</label>
+          <select id="edit-type" class="w-full border-b py-2 text-sm outline-none">
+            <option value="家用">家用</option><option value="個人">個人</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-[10px] font-bold text-stone-500 uppercase">金額</label>
+        <input type="number" id="edit-amount" inputmode="numeric" class="w-full border-b py-2 text-2xl font-bold outline-none text-stone-800">
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="text-[10px] font-bold text-stone-500 uppercase">項目</label>
+          <input type="text" id="edit-item" class="w-full border-b py-2 text-sm outline-none">
+        </div>
+        <div class="flex-1">
+          <label class="text-[10px] font-bold text-stone-500 uppercase">分類</label>
+          <select id="edit-category" class="w-full border-b py-2 text-sm outline-none">
+            <option>飲食</option><option>日常</option><option>交通</option><option>醫療</option>
+            <option>娛樂</option><option>治裝</option><option>保險</option><option>寵物</option>
+            <option>運動</option><option>其他</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeEditModal()" class="flex-1 py-3 rounded-full border border-stone-300 text-sm font-bold text-stone-500">取消</button>
+      <button onclick="saveEdit()" class="flex-1 py-3 rounded-full btn-primary text-sm tracking-widest">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
 <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 z-50">
     <button onclick="showPage('add')" id="nav-add" class="flex flex-col items-center p-2 nav-active text-xs"><span>🖋️</span>記帳</button>
     <button onclick="showPage('history')" id="nav-history" class="flex flex-col items-center p-2 text-gray-500 text-xs"><span>📜</span>紀錄</button>
@@ -72,7 +114,7 @@
     <button onclick="showPage('setting')" id="nav-setting" class="flex flex-col items-center p-2 text-gray-500 text-xs"><span>⚙️</span>設定</button>
 </nav>
 
-<!-- 第一頁：新增紀錄 -->
+<!-- Page: Add -->
 <div id="page-add" class="p-6">
     <h2 class="text-lg font-bold mb-6 tracking-widest text-center">生活記帳簿</h2>
     <div class="card p-6 space-y-5">
@@ -80,29 +122,24 @@
             <input type="date" id="date" class="outline-none bg-transparent">
             <span class="text-stone-600 uppercase"><span id="display-user">倪</span> · <span id="display-type">家用</span></span>
         </div>
-        
         <div class="flex gap-4">
             <div class="flex-1">
                 <label class="text-[10px] font-bold text-stone-500 uppercase">紀錄者</label>
                 <select id="user" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
-                    <option value="倪">倪</option>
-                    <option value="光">光</option>
+                    <option value="倪">倪</option><option value="光">光</option>
                 </select>
             </div>
             <div class="flex-1">
                 <label class="text-[10px] font-bold text-stone-500 uppercase">屬性</label>
                 <select id="type" onchange="updateDisplay()" class="w-full border-b py-2 text-sm outline-none">
-                    <option value="家用">家用</option>
-                    <option value="個人">個人</option>
+                    <option value="家用">家用</option><option value="個人">個人</option>
                 </select>
             </div>
         </div>
-
         <div>
             <label class="text-[10px] font-bold text-stone-500 uppercase">金額</label>
             <input type="number" id="amount" inputmode="numeric" placeholder="0" class="w-full border-b py-2 text-3xl font-bold outline-none text-stone-800">
         </div>
-
         <div class="flex gap-4">
             <div class="w-1/2">
                 <label class="text-[10px] font-bold text-stone-500 uppercase">項目</label>
@@ -111,61 +148,75 @@
             <div class="w-1/2">
                 <label class="text-[10px] font-bold text-stone-500 uppercase">分類</label>
                 <select id="category" class="w-full border-b py-2 text-sm outline-none">
-                    <option value="飲食">飲食</option>
-                    <option value="日常">日常</option>
-                    <option value="交通">交通</option>
-                    <option value="醫療">醫療</option>
-                    <option value="娛樂">娛樂</option>
-                    <option value="治裝">治裝</option>
-                    <option value="保險">保險</option>
-                    <option value="寵物">寵物</option>
-                    <option value="運動">運動</option>
-                    <option value="其他">其他</option>
+                    <option>飲食</option><option>日常</option><option>交通</option><option>醫療</option>
+                    <option>娛樂</option><option>治裝</option><option>保險</option><option>寵物</option>
+                    <option>運動</option><option>其他</option>
                 </select>
             </div>
         </div>
-
         <button onclick="submitData()" class="w-full btn-primary p-4 rounded-full mt-6 tracking-widest text-sm shadow-md">同步至雲端帳簿</button>
     </div>
 </div>
 
-<!-- 第二頁：歷史紀錄 -->
+<!-- Page: History -->
 <div id="page-history" class="hidden p-6">
     <h2 class="text-lg font-bold mb-4 tracking-widest text-center">歷史帳項</h2>
-
-    <!-- ★ 新增：日期篩選器 -->
-    <div class="filter-bar">
-        <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">日期區間</p>
-        <div class="flex items-center gap-2">
-            <input type="date" id="hist-start" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
-            <span class="text-xs text-stone-300 font-bold">—</span>
-            <input type="date" id="hist-end" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
+    <div class="filter-bar space-y-3">
+        <div>
+            <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">日期區間</p>
+            <div class="flex items-center gap-2">
+                <input type="date" id="hist-start" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
+                <span class="text-xs text-stone-300 font-bold">—</span>
+                <input type="date" id="hist-end" onchange="renderHistory()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none text-stone-700">
+            </div>
         </div>
-        <div class="flex justify-end mt-2">
-            <button onclick="resetHistFilter()" class="text-[10px] text-stone-400 underline">重設</button>
+        <div>
+            <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">人員</p>
+            <div id="hist-user-tags" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div>
+            <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">分類</p>
+            <div id="hist-cat-tags" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div class="flex justify-end">
+            <button onclick="resetHistFilter()" class="text-[10px] text-stone-400 underline">重設篩選</button>
         </div>
     </div>
-
-    <div id="history-list" class="space-y-4"></div>
+    <div id="history-list" class="space-y-3"></div>
 </div>
 
-<!-- 第三頁：分析報告 -->
+<!-- Page: Chart -->
 <div id="page-chart" class="hidden p-6 text-stone-700">
     <h2 class="text-lg font-bold mb-4 tracking-widest text-center">收支分析</h2>
-    
-    <div class="flex items-center justify-between gap-2 mb-6 bg-white p-3 rounded-xl shadow-sm border border-stone-200">
-        <input type="date" id="start-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
-        <span class="text-xs text-stone-400">至</span>
-        <input type="date" id="end-date" onchange="renderChart()" class="text-xs outline-none bg-transparent">
+
+    <!-- Period selector -->
+    <div class="card p-4 mb-5 space-y-3">
+        <div class="flex gap-2">
+            <button onclick="setPeriod('thisMonth')" id="pb-thisMonth" class="period-btn active">本月</button>
+            <button onclick="setPeriod('lastMonth')" id="pb-lastMonth" class="period-btn">上月</button>
+            <button onclick="setPeriod('thisYear')" id="pb-thisYear" class="period-btn">今年</button>
+            <button onclick="setPeriod('custom')" id="pb-custom" class="period-btn">自訂</button>
+        </div>
+        <div class="items-center gap-2" id="custom-date-row" style="display:none">
+            <input type="date" id="start-date" onchange="onCustomDate()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none">
+            <span class="text-xs text-stone-400 mx-1">至</span>
+            <input type="date" id="end-date" onchange="onCustomDate()" class="flex-1 text-xs border-b border-stone-200 py-1 outline-none">
+        </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-8 font-bold text-center">
+    <!-- Stat cards -->
+    <div class="grid grid-cols-2 gap-3 mb-3 font-bold text-center">
         <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 家用</p><p class="text-sm" id="stat-ni-home">$0</p></div>
         <div class="stat-box"><p class="text-[9px] text-stone-500 uppercase">倪 · 個人</p><p class="text-sm" id="stat-ni-self">$0</p></div>
         <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 家用</p><p class="text-sm" id="stat-guang-home">$0</p></div>
         <div class="stat-box border-l-stone-400"><p class="text-[9px] text-stone-500 uppercase">光 · 個人</p><p class="text-sm" id="stat-guang-self">$0</p></div>
     </div>
+    <div class="mb-6 rounded-xl border border-stone-200 bg-white p-4 flex justify-between items-center font-bold">
+        <span class="text-xs text-stone-500 uppercase tracking-widest">家用合計（倪＋光）</span>
+        <span class="text-base text-stone-800" id="stat-home-total">$0</span>
+    </div>
 
+    <!-- Doughnut charts -->
     <div class="space-y-6">
         <div class="card p-4">
             <h3 class="text-[11px] font-bold text-center mb-3 text-stone-500 uppercase tracking-widest">● 全家 · 家用花費</h3>
@@ -181,455 +232,463 @@
         </div>
     </div>
 
+    <!-- Trend chart -->
+    <div class="card p-4 mt-6">
+        <h3 class="text-[11px] font-bold text-center mb-3 text-stone-500 uppercase tracking-widest">● 每月支出趨勢</h3>
+        <div class="trend-container"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <!-- Big Expenses -->
     <div class="mt-8">
         <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Big Expenses (&gt; $1,000)</h3>
-        <div id="big-list" class="space-y-1"></div>
+        <div id="big-list"></div>
+        <button id="big-more-btn" onclick="toggleBigMore()" class="mt-2 text-[10px] text-stone-400 underline hidden"></button>
+    </div>
 
-        <div class="mt-8 pb-10">
-            <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Full Details (All Entries)</h3>
-
-            <!-- ★ 新增：分類篩選標籤 -->
-            <div class="mb-3">
-                <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">分類篩選</p>
-                <div id="cat-filter-tags" class="flex flex-wrap gap-2">
-                    <!-- 由 JS 動態產生 -->
-                </div>
-            </div>
-
-            <div id="full-detail-list" class="space-y-2"></div>
+    <!-- Full Details -->
+    <div class="mt-8 pb-10">
+        <h3 class="text-xs font-bold text-stone-500 mb-3 tracking-widest border-l-4 border-stone-400 pl-2 uppercase">Full Details (All Entries)</h3>
+        <div class="mb-3">
+            <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">分類篩選</p>
+            <div id="cat-filter-tags" class="flex flex-wrap gap-2"></div>
         </div>
+        <div id="full-detail-list" class="space-y-2"></div>
     </div>
 </div>
 
-<!-- 第四頁：設定 -->
+<!-- Page: Setting -->
 <div id="page-setting" class="hidden p-6 text-center">
     <h2 class="text-lg font-bold mb-6 tracking-widest text-center">系統設定</h2>
-    <div class="card p-8">
-        <p class="text-[10px] text-stone-400 mb-4 tracking-widest">目前資料儲存於 Google 試算表</p>
+    <div class="card p-8 space-y-4">
+        <p class="text-[10px] text-stone-400 tracking-widest">目前資料儲存於 Google 試算表</p>
         <button onclick="fetchData()" class="w-full py-4 bg-stone-700 text-white rounded-full text-sm font-bold shadow-md active:scale-95 transition-all">🔄 立即強制同步雲端</button>
+        <button onclick="flushOfflineQueue()" class="w-full py-4 bg-stone-200 text-stone-700 rounded-full text-sm font-bold shadow-sm active:scale-95 transition-all">📤 送出離線暫存紀錄</button>
     </div>
 </div>
 
 <script>
-// ======= Service Worker =======
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js')
-            .then(function(reg) { console.log('App 服務啟動成功'); })
-            .catch(function(err) { console.log('服務啟動失敗', err); });
-    });
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
 }
 
-// ======= 請在此處替換您的 GAS URL =======
 var GAS_URL = "https://script.google.com/macros/s/AKfycbw4f7HKvhbqqQZrRMj3fKLFYnk9Mu7Oh_3xLr2aIu_mQikCDeGjsys8qyNKggy4ZWRO/exec";
-// ======================================
 
 var db = [];
-var charts = { home: null, ni: null, guang: null };
-
-// ★ 分類清單（與記帳頁一致）
+var charts = { home:null, ni:null, guang:null, trend:null };
 var ALL_CATEGORIES = ['飲食','日常','交通','醫療','娛樂','治裝','保險','寵物','運動','其他'];
-
-// ★ 目前選取的 Full Details 分類篩選（空陣列 = 全部）
+var ALL_USERS = ['全部','倪家用','倪個人','光家用','光個人'];
 var selectedCats = [];
+var histSelectedCats = [];
+var histSelectedUser = '全部';
+var bigShowAll = false;
+var bigAllItems = [];
+var OFFLINE_KEY = 'niGuangOfflineQueue';
 
-// ======= 初始化分類標籤 =======
-function initCatTags() {
-    var container = document.getElementById('cat-filter-tags');
-    // 「全部」標籤
-    var allTag = document.createElement('span');
-    allTag.className = 'cat-tag active';
-    allTag.dataset.cat = '__all__';
-    allTag.textContent = '全部';
-    allTag.onclick = function() { toggleCatTag('__all__'); };
-    container.appendChild(allTag);
-
-    ALL_CATEGORIES.forEach(function(cat) {
-        var tag = document.createElement('span');
-        tag.className = 'cat-tag';
-        tag.dataset.cat = cat;
-        tag.textContent = cat;
-        tag.onclick = function() { toggleCatTag(cat); };
-        container.appendChild(tag);
-    });
+// ── Toast ──
+function showToast(msg, ms) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, ms||2000);
 }
 
-function toggleCatTag(cat) {
-    if (cat === '__all__') {
-        selectedCats = [];
-    } else {
-        var idx = selectedCats.indexOf(cat);
-        if (idx >= 0) {
-            selectedCats.splice(idx, 1);
-        } else {
-            selectedCats.push(cat);
-        }
-    }
-    // 更新標籤樣式
-    var tags = document.querySelectorAll('#cat-filter-tags .cat-tag');
-    tags.forEach(function(tag) {
-        var c = tag.dataset.cat;
-        if (c === '__all__') {
-            tag.className = 'cat-tag' + (selectedCats.length === 0 ? ' active' : '');
-        } else {
-            tag.className = 'cat-tag' + (selectedCats.indexOf(c) >= 0 ? ' active' : '');
-        }
-    });
-    renderFullDetails();
+// ── Offline queue ──
+function getQueue() { try { return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]'); } catch(e){ return []; } }
+function saveQueue(q) { localStorage.setItem(OFFLINE_KEY, JSON.stringify(q)); updateOfflineBadge(); }
+function updateOfflineBadge() {
+    var q = getQueue();
+    var badge = document.getElementById('offline-badge');
+    document.getElementById('offline-count').textContent = q.length;
+    q.length > 0 ? badge.classList.add('show') : badge.classList.remove('show');
+}
+function flushOfflineQueue() {
+    var q = getQueue();
+    if (!q.length) { showToast('沒有離線暫存紀錄'); return; }
+    document.getElementById('loading').style.display = 'flex';
+    Promise.all(q.map(function(e){ return fetch(GAS_URL,{method:'POST',body:JSON.stringify(e)}); }))
+        .then(function(){ saveQueue([]); return fetchData(); })
+        .then(function(){ showToast('✅ 離線紀錄已全數上傳！'); })
+        .catch(function(){ showToast('⚠️ 部分上傳失敗'); document.getElementById('loading').style.display='none'; });
 }
 
-// ======= 工具函數：安全取得日期字串 YYYY-MM-DD =======
+// ── Date helpers ──
 function safeDate(val) {
     if (!val) return '';
-    var s = String(val);
-    s = s.split('T')[0];
-    s = s.substring(0, 10);
-    s = s.replace(/\//g, '-');
-    return s;
+    return String(val).split('T')[0].substring(0,10).replace(/\//g,'-');
 }
-
-// ======= 取得今天與本月第一天 =======
 function getTodayStr() {
-    var now = new Date();
-    var y = now.getFullYear();
-    var m = String(now.getMonth() + 1).padStart(2, '0');
-    var d = String(now.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
+    var n=new Date();
+    return new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().split('T')[0];
+}
+function getFirstDay(offsetMonth) {
+    offsetMonth = offsetMonth||0;
+    var n=new Date(), y=n.getFullYear(), m=n.getMonth()+offsetMonth;
+    while(m<0){m+=12;y--;} while(m>11){m-=12;y++;}
+    return y+'-'+String(m+1).padStart(2,'0')+'-01';
+}
+function getLastDay(offsetMonth) {
+    offsetMonth = offsetMonth||0;
+    var n=new Date(), y=n.getFullYear(), m=n.getMonth()+offsetMonth+1;
+    while(m<0){m+=12;y--;} while(m>11){m-=12;y++;}
+    var d=new Date(y,m,0);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-function getFirstDayOfMonthStr() {
-    var now = new Date();
-    var y = now.getFullYear();
-    var m = String(now.getMonth() + 1).padStart(2, '0');
-    return y + '-' + m + '-01';
+// ── Period picker ──
+function setPeriod(p) {
+    ['thisMonth','lastMonth','thisYear','custom'].forEach(function(id){
+        document.getElementById('pb-'+id).classList.toggle('active', id===p);
+    });
+    var row = document.getElementById('custom-date-row');
+    if (p==='custom') {
+        row.style.display = 'flex';
+        return;
+    }
+    row.style.display = 'none';
+    var s, e = getTodayStr();
+    if (p==='thisMonth')  { s=getFirstDay(0); }
+    if (p==='lastMonth')  { s=getFirstDay(-1); e=getLastDay(-1); }
+    if (p==='thisYear')   { s=new Date().getFullYear()+'-01-01'; }
+    document.getElementById('start-date').value = s;
+    document.getElementById('end-date').value = e;
+    renderChart();
+}
+function onCustomDate() {
+    ['thisMonth','lastMonth','thisYear','custom'].forEach(function(id){
+        document.getElementById('pb-'+id).classList.toggle('active', id==='custom');
+    });
+    renderChart();
 }
 
-// ======= 從雲端抓取資料 =======
+// ── Fetch ──
 function fetchData() {
     document.getElementById('loading').style.display = 'flex';
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "get" }) })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
+    return fetch(GAS_URL, {method:'POST', body:JSON.stringify({action:'get'})})
+        .then(function(r){ return r.json(); })
+        .then(function(data){
             db = data;
-            db.sort(function(a, b) {
-                var da = safeDate(a.date);
-                var db2 = safeDate(b.date);
-                if (db2 > da) return 1;
-                if (db2 < da) return -1;
-                return Number(b.id) - Number(a.id);
+            db.sort(function(a,b){
+                var da=safeDate(a.date),db2=safeDate(b.date);
+                return da<db2?1:da>db2?-1:Number(b.id)-Number(a.id);
             });
             renderHistory();
             renderChart();
-            document.getElementById('loading').style.display = 'none';
+            document.getElementById('loading').style.display='none';
         })
-        .catch(function(e) {
-            console.error("Fetch error:", e);
-            alert("同步失敗，請檢查網路連線或 GAS 設定");
-            document.getElementById('loading').style.display = 'none';
+        .catch(function(){
+            showToast('⚠️ 同步失敗，請檢查網路');
+            document.getElementById('loading').style.display='none';
         });
 }
 
-// ======= 提交資料到雲端 =======
+// ── Submit ──
 function submitData() {
     var entry = {
-        action: "add",
-        id: Date.now(),
-        date: document.getElementById('date').value,
-        user: document.getElementById('user').value,
-        type: document.getElementById('type').value,
-        amount: parseFloat(document.getElementById('amount').value) || 0,
-        item: document.getElementById('item').value,
-        category: document.getElementById('category').value
+        action:'add', id:Date.now(),
+        date:document.getElementById('date').value,
+        user:document.getElementById('user').value,
+        type:document.getElementById('type').value,
+        amount:parseFloat(document.getElementById('amount').value)||0,
+        item:document.getElementById('item').value,
+        category:document.getElementById('category').value
     };
-
-    if (!entry.amount || !entry.item) {
-        alert('請填寫完整金額與項目');
-        return;
-    }
-
-    document.getElementById('loading').style.display = 'flex';
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(entry) })
-        .then(function() {
-            document.getElementById('amount').value = '';
-            document.getElementById('item').value = '';
+    if (!entry.amount||!entry.item) { showToast('⚠️ 請填寫金額與項目'); return; }
+    document.getElementById('loading').style.display='flex';
+    fetch(GAS_URL,{method:'POST',body:JSON.stringify(entry)})
+        .then(function(){
+            document.getElementById('amount').value='';
+            document.getElementById('item').value='';
             return fetchData();
         })
-        .then(function() {
-            alert("雲端儲存成功！");
-        })
-        .catch(function(e) {
-            alert("儲存失敗，請重試");
-            document.getElementById('loading').style.display = 'none';
+        .then(function(){ showToast('✅ 已同步至雲端！'); })
+        .catch(function(){
+            var q=getQueue(); q.push(entry); saveQueue(q);
+            document.getElementById('amount').value='';
+            document.getElementById('item').value='';
+            document.getElementById('loading').style.display='none';
+            showToast('📶 網路異常，已暫存離線',3000);
         });
 }
 
-// ======= 刪除雲端資料 =======
+// ── Delete ──
 function deleteItem(id) {
     if (!confirm('確定要從雲端刪除這筆紀錄嗎？')) return;
-
-    document.getElementById('loading').style.display = 'flex';
-    fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "delete", id: id })
-    })
-        .then(function(response) { return response.text(); })
-        .then(function(result) {
-            if (result === "Deleted") {
-                fetchData();
-            } else {
-                alert("刪除失敗：雲端找不到該項目");
-                document.getElementById('loading').style.display = 'none';
-            }
+    document.getElementById('loading').style.display='flex';
+    fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id:id})})
+        .then(function(r){ return r.text(); })
+        .then(function(res){
+            if (res==='Deleted') { fetchData().then(function(){ showToast('🗑️ 已刪除'); }); }
+            else { showToast('⚠️ 刪除失敗'); document.getElementById('loading').style.display='none'; }
         })
-        .catch(function(e) {
-            alert("網路連線錯誤");
-            document.getElementById('loading').style.display = 'none';
-        });
+        .catch(function(){ showToast('⚠️ 網路錯誤'); document.getElementById('loading').style.display='none'; });
 }
 
-// ======= 重設歷史篩選 =======
-function resetHistFilter() {
-    document.getElementById('hist-start').value = getFirstDayOfMonthStr();
-    document.getElementById('hist-end').value = getTodayStr();
-    renderHistory();
+// ── Edit ──
+function openEditModal(id) {
+    var item = db.find(function(x){ return String(x.id)===String(id); });
+    if (!item) return;
+    document.getElementById('edit-id').value = item.id;
+    document.getElementById('edit-date').value = safeDate(item.date);
+    document.getElementById('edit-user').value = item.user;
+    document.getElementById('edit-type').value = item.type;
+    document.getElementById('edit-amount').value = item.amount;
+    document.getElementById('edit-item').value = item.item;
+    document.getElementById('edit-category').value = item.category;
+    document.getElementById('edit-modal').classList.add('open');
 }
+function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); }
+function saveEdit() {
+    var updated = {
+        action:'update', id:document.getElementById('edit-id').value,
+        date:document.getElementById('edit-date').value,
+        user:document.getElementById('edit-user').value,
+        type:document.getElementById('edit-type').value,
+        amount:parseFloat(document.getElementById('edit-amount').value)||0,
+        item:document.getElementById('edit-item').value,
+        category:document.getElementById('edit-category').value
+    };
+    if (!updated.amount||!updated.item) { showToast('⚠️ 請填寫金額與項目'); return; }
+    closeEditModal();
+    document.getElementById('loading').style.display='flex';
+    fetch(GAS_URL,{method:'POST',body:JSON.stringify(updated)})
+        .then(function(){ return fetchData(); })
+        .then(function(){ showToast('✅ 編輯已儲存！'); })
+        .catch(function(){ showToast('⚠️ 儲存失敗'); document.getElementById('loading').style.display='none'; });
+}
+document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) closeEditModal(); });
 
-// 初始化
+// ── Init ──
 window.onload = function() {
-    try {
-        var now = new Date();
-        var today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        var firstDayOfMonth = today.substring(0, 8) + '01';
-
-        var setVal = function(id, val) {
-            var el = document.getElementById(id);
-            if (el) el.value = val;
-        };
-
-        setVal('date', today);
-        setVal('start-date', firstDayOfMonth);
-        setVal('end-date', today);
-
-        // ★ 歷史頁日期預設值
-        setVal('hist-start', firstDayOfMonth);
-        setVal('hist-end', today);
-
-        // ★ 初始化分類標籤
-        initCatTags();
-
-        fetchData();
-    } catch (e) {
-        console.error("初始化失敗:", e);
-    }
+    var today = getTodayStr();
+    var first = getFirstDay(0);
+    function sv(id,v){ var el=document.getElementById(id); if(el) el.value=v; }
+    sv('date',today); sv('start-date',first); sv('end-date',today);
+    sv('hist-start',first); sv('hist-end',today);
+    initHistoryFilters();
+    initCatFilterTags();
+    updateOfflineBadge();
+    fetchData();
 };
 
-// ======= 頁面切換 =======
-function showPage(pageId) {
-    var pages = document.querySelectorAll('div[id^="page-"]');
-    for (var i = 0; i < pages.length; i++) {
-        pages[i].classList.add('hidden');
-    }
-    var navBtns = document.querySelectorAll('nav button');
-    for (var j = 0; j < navBtns.length; j++) {
-        navBtns[j].classList.remove('nav-active');
-        navBtns[j].classList.add('text-gray-500');
-    }
-    document.getElementById('page-' + pageId).classList.remove('hidden');
-    var activeNav = document.getElementById('nav-' + pageId);
-    activeNav.classList.add('nav-active');
-    activeNav.classList.remove('text-gray-500');
-    if (pageId === 'chart') renderChart();
-    window.scrollTo(0, 0);
+// ── Page switch ──
+function showPage(p) {
+    document.querySelectorAll('div[id^="page-"]').forEach(function(x){ x.classList.add('hidden'); });
+    document.querySelectorAll('nav button').forEach(function(b){ b.classList.remove('nav-active'); b.classList.add('text-gray-500'); });
+    document.getElementById('page-'+p).classList.remove('hidden');
+    var nb=document.getElementById('nav-'+p);
+    nb.classList.add('nav-active'); nb.classList.remove('text-gray-500');
+    if (p==='chart') renderChart();
+    window.scrollTo(0,0);
 }
-
-// ======= 更新顯示 =======
 function updateDisplay() {
-    document.getElementById('display-user').innerText = document.getElementById('user').value;
-    document.getElementById('display-type').innerText = document.getElementById('type').value;
+    document.getElementById('display-user').innerText=document.getElementById('user').value;
+    document.getElementById('display-type').innerText=document.getElementById('type').value;
 }
 
-// ======= 渲染歷史紀錄（含日期篩選）=======
+// ── History filters ──
+function initHistoryFilters() {
+    var uc = document.getElementById('hist-user-tags');
+    ALL_USERS.forEach(function(u){
+        var t=document.createElement('span');
+        t.className='chip'+(u==='全部'?' active':''); t.dataset.u=u; t.textContent=u;
+        t.onclick=function(){ toggleHistUser(u); };
+        uc.appendChild(t);
+    });
+    var cc = document.getElementById('hist-cat-tags');
+    var allT=document.createElement('span');
+    allT.className='chip active'; allT.dataset.c='__all__'; allT.textContent='全部';
+    allT.onclick=function(){ toggleHistCat('__all__'); };
+    cc.appendChild(allT);
+    ALL_CATEGORIES.forEach(function(c){
+        var t=document.createElement('span');
+        t.className='chip'; t.dataset.c=c; t.textContent=c;
+        t.onclick=function(){ toggleHistCat(c); };
+        cc.appendChild(t);
+    });
+}
+function toggleHistUser(u) {
+    histSelectedUser=u;
+    document.querySelectorAll('#hist-user-tags .chip').forEach(function(t){ t.classList.toggle('active',t.dataset.u===u); });
+    renderHistory();
+}
+function toggleHistCat(c) {
+    if(c==='__all__'){ histSelectedCats=[]; }
+    else { var i=histSelectedCats.indexOf(c); if(i>=0) histSelectedCats.splice(i,1); else histSelectedCats.push(c); }
+    document.querySelectorAll('#hist-cat-tags .chip').forEach(function(t){
+        t.classList.toggle('active', t.dataset.c==='__all__' ? histSelectedCats.length===0 : histSelectedCats.indexOf(t.dataset.c)>=0);
+    });
+    renderHistory();
+}
+function resetHistFilter() {
+    document.getElementById('hist-start').value=getFirstDay(0);
+    document.getElementById('hist-end').value=getTodayStr();
+    histSelectedUser='全部'; histSelectedCats=[];
+    document.querySelectorAll('#hist-user-tags .chip').forEach(function(t){ t.classList.toggle('active',t.dataset.u==='全部'); });
+    document.querySelectorAll('#hist-cat-tags .chip').forEach(function(t){ t.classList.toggle('active',t.dataset.c==='__all__'); });
+    renderHistory();
+}
 function renderHistory() {
-    var list = document.getElementById('history-list');
-
-    // ★ 讀取篩選日期
-    var histStart = document.getElementById('hist-start') ? document.getElementById('hist-start').value : '';
-    var histEnd = document.getElementById('hist-end') ? document.getElementById('hist-end').value : '';
-
-    // ★ 過濾
-    var filtered = db.filter(function(item) {
-        var d = safeDate(item.date);
-        if (histStart && d < histStart) return false;
-        if (histEnd && d > histEnd) return false;
+    var hs=document.getElementById('hist-start').value, he=document.getElementById('hist-end').value;
+    var filtered=db.filter(function(it){
+        var d=safeDate(it.date);
+        if(hs&&d<hs) return false;
+        if(he&&d>he) return false;
+        if(histSelectedUser!=='全部'&&(it.user+it.type)!==histSelectedUser) return false;
+        if(histSelectedCats.length>0&&histSelectedCats.indexOf(it.category)<0) return false;
         return true;
     });
-
-    if (!filtered.length) {
-        list.innerHTML = '<p class="text-center text-stone-400 mt-10">該區間無紀錄</p>';
-        return;
-    }
-
-    var html = '';
-    for (var i = 0; i < filtered.length; i++) {
-        var item = filtered[i];
-        var displayDate = safeDate(item.date);
-        html += '<div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm mb-3">' +
-            '<div>' +
-            '<p class="text-[10px] text-stone-400">' + displayDate + ' · ' + item.user + item.type + '</p>' +
-            '<p>' + item.item + ' <span class="text-[9px] font-normal text-stone-400">#' + item.category + '</span></p>' +
-            '</div>' +
-            '<div class="text-right">' +
-            '<p class="text-stone-800">$' + Number(item.amount).toLocaleString() + '</p>' +
-            '<button onclick="deleteItem(\'' + item.id + '\')" class="text-[10px] text-red-400 underline font-normal mt-1">Delete</button>' +
-            '</div>' +
-            '</div>';
-    }
-    list.innerHTML = html;
+    var list=document.getElementById('history-list');
+    if(!filtered.length){ list.innerHTML='<p class="text-center text-stone-400 mt-10">該條件無紀錄</p>'; return; }
+    var html='';
+    filtered.forEach(function(it){
+        html+='<div class="card p-4 flex justify-between items-center border-l-4 border-stone-200 font-bold text-sm">'+
+            '<div class="flex-1 min-w-0 pr-2">'+
+            '<p class="text-[10px] text-stone-400">'+safeDate(it.date)+' · '+it.user+it.type+'</p>'+
+            '<p class="truncate">'+it.item+' <span class="text-[9px] font-normal text-stone-400">#'+it.category+'</span></p>'+
+            '</div>'+
+            '<div class="text-right flex-shrink-0">'+
+            '<p class="text-stone-800">$'+Number(it.amount).toLocaleString()+'</p>'+
+            '<div class="flex gap-2 justify-end mt-1">'+
+            '<button onclick="openEditModal(\''+it.id+'\')" class="text-[10px] text-blue-400 underline font-normal">編輯</button>'+
+            '<button onclick="deleteItem(\''+it.id+'\')" class="text-[10px] text-red-400 underline font-normal">刪除</button>'+
+            '</div></div></div>';
+    });
+    list.innerHTML=html;
 }
 
-// ======= 渲染 Full Details（含分類篩選）=======
+// ── Cat filter tags (Full Details) ──
+function initCatFilterTags() {
+    var container=document.getElementById('cat-filter-tags');
+    var allT=document.createElement('span');
+    allT.className='chip active'; allT.dataset.cat='__all__'; allT.textContent='全部';
+    allT.onclick=function(){ toggleCatTag('__all__'); };
+    container.appendChild(allT);
+    ALL_CATEGORIES.forEach(function(cat){
+        var t=document.createElement('span');
+        t.className='chip'; t.dataset.cat=cat; t.textContent=cat;
+        t.onclick=function(){ toggleCatTag(cat); };
+        container.appendChild(t);
+    });
+}
+function toggleCatTag(cat) {
+    if(cat==='__all__'){ selectedCats=[]; }
+    else { var i=selectedCats.indexOf(cat); if(i>=0) selectedCats.splice(i,1); else selectedCats.push(cat); }
+    document.querySelectorAll('#cat-filter-tags .chip').forEach(function(t){
+        t.classList.toggle('active', t.dataset.cat==='__all__' ? selectedCats.length===0 : selectedCats.indexOf(t.dataset.cat)>=0);
+    });
+    renderFullDetails();
+}
 function renderFullDetails() {
-    var start = document.getElementById('start-date').value;
-    var end = document.getElementById('end-date').value;
+    var s=document.getElementById('start-date').value, e=document.getElementById('end-date').value;
+    var filtered=db.filter(function(x){
+        var d=safeDate(x.date);
+        return d>=s&&d<=e&&(selectedCats.length===0||selectedCats.indexOf(x.category)>=0);
+    }).sort(function(a,b){ var da=safeDate(a.date),db2=safeDate(b.date); return da<db2?1:da>db2?-1:0; });
+    if(!filtered.length){ document.getElementById('full-detail-list').innerHTML='<p class="text-[10px] text-stone-400 italic text-center py-10">選定條件內無任何紀錄</p>'; return; }
+    var html='';
+    filtered.forEach(function(fi){
+        html+='<div class="flex justify-between items-center bg-white/50 p-3 rounded-lg border border-stone-100 shadow-sm text-xs mb-2">'+
+            '<div class="flex flex-col flex-1 min-w-0 pr-2">'+
+            '<span class="text-[9px] text-stone-400 font-normal">'+safeDate(fi.date)+' · '+fi.user+fi.type+'</span>'+
+            '<span class="text-stone-700 font-bold truncate">'+fi.item+'</span>'+
+            '</div>'+
+            '<div class="text-right flex-shrink-0">'+
+            '<span class="text-stone-800 font-bold">$'+Number(fi.amount).toLocaleString()+'</span>'+
+            '<div class="text-[9px] text-stone-400 font-normal">'+fi.category+'</div>'+
+            '<button onclick="openEditModal(\''+fi.id+'\')" class="text-[9px] text-blue-400 underline font-normal">編輯</button>'+
+            '</div></div>';
+    });
+    document.getElementById('full-detail-list').innerHTML=html;
+}
 
-    var filtered = [];
-    for (var i = 0; i < db.length; i++) {
-        var d = safeDate(db[i].date);
-        if (d >= start && d <= end) filtered.push(db[i]);
-    }
+// ── Big expenses ──
+function toggleBigMore() { bigShowAll=!bigShowAll; renderBigList(); }
+function renderBigList() {
+    var shown=bigShowAll?bigAllItems:bigAllItems.slice(0,5);
+    var html='';
+    shown.forEach(function(bi){
+        html+='<div class="flex justify-between text-[11px] py-2 border-b border-stone-100 font-bold italic">'+
+            '<span class="text-stone-600">'+bi.item+' ('+bi.user+bi.type+')</span>'+
+            '<span class="text-stone-800">$'+Number(bi.amount).toLocaleString()+'</span></div>';
+    });
+    document.getElementById('big-list').innerHTML=html||'<p class="text-[10px] text-stone-400 italic">期間內無大額支出</p>';
+    var btn=document.getElementById('big-more-btn');
+    if(bigAllItems.length>5){ btn.classList.remove('hidden'); btn.textContent=bigShowAll?'收起':'顯示更多（共'+bigAllItems.length+'筆）'; }
+    else { btn.classList.add('hidden'); }
+}
 
-    // ★ 分類過濾
-    if (selectedCats.length > 0) {
-        filtered = filtered.filter(function(item) {
-            return selectedCats.indexOf(item.category) >= 0;
-        });
-    }
-
-    var sortedFiltered = filtered.slice().sort(function(a, b) {
-        var da = safeDate(a.date);
-        var db2 = safeDate(b.date);
-        if (db2 > da) return 1;
-        if (db2 < da) return -1;
-        return 0;
+// ── Main chart ──
+function renderChart() {
+    var s=document.getElementById('start-date').value, e=document.getElementById('end-date').value;
+    if(!s||!e) return;
+    var filtered=db.filter(function(x){ var d=safeDate(x.date); return d>=s&&d<=e; });
+    var stats={'倪家用':0,'倪個人':0,'光家用':0,'光個人':0};
+    var cats={home:{},ni:{},guang:{}};
+    var monthly={home:{},ni:{},guang:{}};
+    filtered.forEach(function(it){
+        var amt=Number(it.amount)||0, key=it.user+it.type;
+        if(stats.hasOwnProperty(key)) stats[key]+=amt;
+        if(it.type==='家用') cats.home[it.category]=(cats.home[it.category]||0)+amt;
+        else if(it.user==='倪') cats.ni[it.category]=(cats.ni[it.category]||0)+amt;
+        else if(it.user==='光') cats.guang[it.category]=(cats.guang[it.category]||0)+amt;
+    });
+    // monthly trend uses ALL db (not just range) for context, but filtered by year range
+    db.forEach(function(it){
+        var d=safeDate(it.date); if(!d) return;
+        var ym=d.substring(0,7), amt=Number(it.amount)||0;
+        if(it.type==='家用') monthly.home[ym]=(monthly.home[ym]||0)+amt;
+        else if(it.user==='倪') monthly.ni[ym]=(monthly.ni[ym]||0)+amt;
+        else if(it.user==='光') monthly.guang[ym]=(monthly.guang[ym]||0)+amt;
     });
 
-    var detailHtml = '';
-    for (var f = 0; f < sortedFiltered.length; f++) {
-        var fi = sortedFiltered[f];
-        var dateStr = safeDate(fi.date);
-        detailHtml += '<div class="flex justify-between items-center bg-white/50 p-3 rounded-lg border border-stone-100 shadow-sm text-xs mb-2">' +
-            '<div class="flex flex-col">' +
-            '<span class="text-[9px] text-stone-400 font-normal">' + dateStr + ' · ' + fi.user + fi.type + '</span>' +
-            '<span class="text-stone-700 font-bold">' + fi.item + '</span>' +
-            '</div>' +
-            '<div class="text-right">' +
-            '<span class="text-stone-800 font-bold">$' + Number(fi.amount).toLocaleString() + '</span>' +
-            '<div class="text-[9px] text-stone-400 font-normal">' + fi.category + '</div>' +
-            '</div>' +
-            '</div>';
+    document.getElementById('stat-ni-home').innerText='$'+stats['倪家用'].toLocaleString();
+    document.getElementById('stat-ni-self').innerText='$'+stats['倪個人'].toLocaleString();
+    document.getElementById('stat-guang-home').innerText='$'+stats['光家用'].toLocaleString();
+    document.getElementById('stat-guang-self').innerText='$'+stats['光個人'].toLocaleString();
+    document.getElementById('stat-home-total').innerText='$'+(stats['倪家用']+stats['光家用']).toLocaleString();
+
+    var palette=['#E07A5F','#3D405B','#81B29A','#F2CC8F','#9ead9d','#A69CAC','#E8A598','#8E9AAF','#C44536','#7785AC'];
+    function genDoughnut(data){
+        var labels=Object.keys(data),values=Object.values(data);
+        return {type:'doughnut',data:{labels:labels.length?labels:['無資料'],datasets:[{data:values.length?values:[1],backgroundColor:labels.length?palette:['#f0f0f0'],borderWidth:2,borderColor:'#ffffff'}]},options:{maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:labels.length>0,position:'right',labels:{color:'#4a4541',font:{size:9,weight:'700'},boxWidth:8}}}}};
     }
-    document.getElementById('full-detail-list').innerHTML = detailHtml || '<p class="text-[10px] text-stone-400 italic text-center py-10">選定條件內無任何紀錄</p>';
-}
+    ['home','ni','guang'].forEach(function(ck){
+        var canvas=document.getElementById(ck+'Chart'); if(!canvas) return;
+        if(charts[ck]) charts[ck].destroy();
+        charts[ck]=new Chart(canvas.getContext('2d'),genDoughnut(cats[ck]));
+    });
 
-// ======= 渲染分析圖表 =======
-function renderChart() {
-    var startInput = document.getElementById('start-date');
-    var endInput = document.getElementById('end-date');
-    if (!startInput || !endInput) return;
+    // Trend: collect months in range
+    var allMonths=Array.from(new Set(
+        Object.keys(monthly.home).concat(Object.keys(monthly.ni)).concat(Object.keys(monthly.guang))
+    )).filter(function(ym){ return ym>=s.substring(0,7)&&ym<=e.substring(0,7); }).sort();
 
-    var start = startInput.value;
-    var end = endInput.value;
-
-    var filtered = [];
-    for (var i = 0; i < db.length; i++) {
-        var d = safeDate(db[i].date);
-        if (d >= start && d <= end) {
-            filtered.push(db[i]);
-        }
-    }
-
-    var stats = { "倪家用": 0, "倪個人": 0, "光家用": 0, "光個人": 0 };
-    var cats = { home: {}, ni: {}, guang: {} };
-
-    for (var j = 0; j < filtered.length; j++) {
-        var item = filtered[j];
-        var amt = Number(item.amount) || 0;
-        var key = item.user + item.type;
-        if (stats.hasOwnProperty(key)) {
-            stats[key] += amt;
-        }
-        if (item.type === "家用") {
-            cats.home[item.category] = (cats.home[item.category] || 0) + amt;
-        } else if (item.user === "倪") {
-            cats.ni[item.category] = (cats.ni[item.category] || 0) + amt;
-        } else if (item.user === "光") {
-            cats.guang[item.category] = (cats.guang[item.category] || 0) + amt;
-        }
-    }
-
-    document.getElementById('stat-ni-home').innerText = '$' + stats['倪家用'].toLocaleString();
-    document.getElementById('stat-ni-self').innerText = '$' + stats['倪個人'].toLocaleString();
-    document.getElementById('stat-guang-home').innerText = '$' + stats['光家用'].toLocaleString();
-    document.getElementById('stat-guang-self').innerText = '$' + stats['光個人'].toLocaleString();
-
-    var palette = ['#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9ead9d', '#A69CAC', '#E8A598', '#8E9AAF', '#C44536', '#7785AC'];
-
-    function genConfig(data) {
-        var labels = Object.keys(data);
-        var values = Object.values(data);
-        return {
-            type: 'doughnut',
-            data: {
-                labels: labels.length > 0 ? labels : ['無資料'],
-                datasets: [{
-                    data: values.length > 0 ? values : [1],
-                    backgroundColor: labels.length > 0 ? palette : ['#f0f0f0'],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                animation: { duration: 500 },
-                plugins: {
-                    legend: {
-                        display: labels.length > 0,
-                        position: 'right',
-                        labels: { color: '#4a4541', font: { size: 9, weight: '700' }, boxWidth: 8 }
-                    }
-                }
+    if(charts.trend) charts.trend.destroy();
+    charts.trend=new Chart(document.getElementById('trendChart').getContext('2d'),{
+        type:'line',
+        data:{
+            labels:allMonths.map(function(ym){ return ym.replace('-','/'); }),
+            datasets:[
+                {label:'家用',data:allMonths.map(function(m){ return monthly.home[m]||0; }),borderColor:'#81B29A',backgroundColor:'rgba(129,178,154,0.1)',tension:0.3,fill:true,pointRadius:4},
+                {label:'倪個人',data:allMonths.map(function(m){ return monthly.ni[m]||0; }),borderColor:'#E07A5F',backgroundColor:'transparent',tension:0.3,fill:false,pointRadius:4},
+                {label:'光個人',data:allMonths.map(function(m){ return monthly.guang[m]||0; }),borderColor:'#3D405B',backgroundColor:'transparent',tension:0.3,fill:false,pointRadius:4}
+            ]
+        },
+        options:{
+            maintainAspectRatio:false,animation:{duration:400},
+            plugins:{legend:{position:'bottom',labels:{color:'#4a4541',font:{size:9,weight:'700'},boxWidth:10,padding:8}}},
+            scales:{
+                x:{ticks:{color:'#9a9088',font:{size:9}},grid:{display:false}},
+                y:{ticks:{color:'#9a9088',font:{size:9},callback:function(v){ return '$'+(v>=1000?(v/1000).toFixed(0)+'k':v); }},grid:{color:'#f0ece8'}}
             }
-        };
-    }
-
-    var chartKeys = ['home', 'ni', 'guang'];
-    for (var k = 0; k < chartKeys.length; k++) {
-        var ck = chartKeys[k];
-        var canvas = document.getElementById(ck + 'Chart');
-        if (!canvas) continue;
-        var ctx = canvas.getContext('2d');
-        if (charts[ck]) {
-            charts[ck].destroy();
         }
-        charts[ck] = new Chart(ctx, genConfig(cats[ck]));
-    }
+    });
 
-    // Big Expenses
-    var bigOnes = filtered.filter(function(i) { return Number(i.amount) >= 1000; });
-    bigOnes.sort(function(a, b) { return Number(b.amount) - Number(a.amount); });
-    bigOnes = bigOnes.slice(0, 5);
-
-    var bigHtml = '';
-    for (var b = 0; b < bigOnes.length; b++) {
-        var bi = bigOnes[b];
-        bigHtml += '<div class="flex justify-between text-[11px] py-2 border-b border-stone-100 font-bold italic">' +
-            '<span class="text-stone-600">' + bi.item + ' (' + bi.user + bi.type + ')</span>' +
-            '<span class="text-stone-800">$' + Number(bi.amount).toLocaleString() + '</span>' +
-            '</div>';
-    }
-    document.getElementById('big-list').innerHTML = bigHtml || '<p class="text-[10px] text-stone-400 italic">期間內無大額支出</p>';
-
-    // Full Details（呼叫獨立函數，保留分類篩選狀態）
+    // Big expenses
+    bigShowAll=false;
+    bigAllItems=filtered.filter(function(i){ return Number(i.amount)>=1000; });
+    bigAllItems.sort(function(a,b){ return Number(b.amount)-Number(a.amount); });
+    renderBigList();
     renderFullDetails();
 }
 </script>
