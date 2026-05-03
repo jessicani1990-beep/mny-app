@@ -285,26 +285,36 @@ function deleteItem(id) {
         });
 }
 
-// ======= 初始化 =======
-window.onload = function() {
-    try {
-        var today = getTodayStr();
-        var firstDay = getFirstDayOfMonthStr();
+// 初始化
+        window.onload = () => {
+            try {
+                const now = new Date();
+                // 取得台灣時間的日期字串 (YYYY-MM-DD)
+                const today = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                const firstDayOfMonth = today.substring(0, 8) + '01';
 
-        var dateEl = document.getElementById('date');
-        if (dateEl) dateEl.value = today;
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val;
+                };
 
-        var startEl = document.getElementById('start-date');
-        if (startEl) startEl.value = firstDay;
+                // 問題 1：設定「記帳頁面」的日期為當天
+                setVal('date', today);
 
-        var endEl = document.getElementById('end-date');
-        if (endEl) endEl.value = today;
+                // 問題 2：設定「分析頁面」的日期區間為當月一號到當天
+                setVal('start-date', firstDayOfMonth);
+                setVal('end-date', today);
 
-        fetchData();
-    } catch(e) {
-        console.error("初始化失敗:", e);
-    }
-};
+                // 如果有歷史紀錄的濾網也要設 (選用)
+                setVal('filter-start', firstDayOfMonth);
+                setVal('filter-end', today);
+
+                // 確保所有欄位填入後，再開始抓取雲端資料
+                fetchData(); 
+            } catch (e) {
+                console.error("初始化失敗:", e);
+            }
+        };
 
 // ======= 頁面切換 =======
 function showPage(pageId) {
