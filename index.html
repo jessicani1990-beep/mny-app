@@ -451,9 +451,21 @@ function saveEdit() {
     closeEditModal();
     document.getElementById('loading').style.display='flex';
     fetch(GAS_URL,{method:'POST',body:JSON.stringify(updated)})
-        .then(function(){ return fetchData(); })
-        .then(function(){ showToast('✅ 編輯已儲存！'); })
-        .catch(function(){ showToast('⚠️ 儲存失敗'); document.getElementById('loading').style.display='none'; });
+        .then(function(r){ return r.text(); })   // ← 先讀回應文字
+        .then(function(res){
+            console.log('update response:', res);  // ← 在 F12 可看到伺服器回什麼
+            if (res === 'Updated') {               // ← 視 GAS 實際回傳值調整
+                return fetchData().then(function(){ showToast('✅ 編輯已儲存！'); });
+            } else {
+                showToast('⚠️ 儲存失敗：' + res);
+                document.getElementById('loading').style.display='none';
+            }
+        })
+        .catch(function(err){
+            console.error('saveEdit error:', err);
+            showToast('⚠️ 網路錯誤，請重試');
+            document.getElementById('loading').style.display='none';
+        });
 }
 document.getElementById('edit-modal').addEventListener('click',function(e){ if(e.target===this) closeEditModal(); });
 
