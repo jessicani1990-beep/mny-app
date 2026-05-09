@@ -415,13 +415,14 @@ function submitData() {
 function deleteItem(id) {
     if (!confirm('確定要從雲端刪除這筆紀錄嗎？')) return;
     document.getElementById('loading').style.display='flex';
-    fetch(GAS_URL,{method:'POST',body:JSON.stringify({ action: 'delete', id: id, secret: SECRET })
-        .then(function(r){ return r.text(); })
-        .then(function(res){
-            if (res==='Deleted') { fetchData().then(function(){ showToast('🗑️ 已刪除'); }); }
-            else { showToast('⚠️ 刪除失敗'); document.getElementById('loading').style.display='none'; }
-        })
-        .catch(function(){ showToast('⚠️ 網路錯誤'); document.getElementById('loading').style.display='none'; });
+    // ✅ 正確：fetch(...) 先關閉，再接 .then
+fetch(GAS_URL,{method:'POST',body:JSON.stringify({ action: 'delete', id: id, secret: SECRET })})
+    .then(function(r){ return r.text(); })
+    .then(function(res){
+        if (res==='Deleted') { fetchData().then(function(){ showToast('🗑️ 已刪除'); }); }
+        else { showToast('⚠️ 刪除失敗'); document.getElementById('loading').style.display='none'; }
+    })
+    .catch(function(){ showToast('⚠️ 網路錯誤'); document.getElementById('loading').style.display='none'; });
 }
 
 // ── Edit ──
