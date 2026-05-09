@@ -306,6 +306,8 @@ function flushOfflineQueue() {
     var q = getQueue();
     if (!q.length) { showToast('沒有離線暫存紀錄'); return; }
     document.getElementById('loading').style.display = 'flex';
+    // 確保每筆都有 secret（相容舊版暫存資料）
+    q = q.map(function(e){ return Object.assign({}, e, { secret: SECRET }); });
     Promise.all(q.map(function(e){ return fetch(GAS_URL,{method:'POST',body:JSON.stringify(e)}); }))
         .then(function(){ saveQueue([]); return fetchData(); })
         .then(function(){ showToast('✅ 離線紀錄已全數上傳！'); })
