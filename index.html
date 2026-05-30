@@ -659,11 +659,12 @@ function renderChart() {
     document.getElementById('stat-guang-self').innerText='$'+stats['光個人'].toLocaleString();
     document.getElementById('stat-home-total').innerText='$'+(stats['倪家用']+stats['光家用']).toLocaleString();
 
-    var palette=['#E07A5F','#3D405B','#81B29A','#F2CC8F','#9ead9d','#A69CAC','#E8A598','#8E9AAF','#C44536','#7785AC'];
-    function genDoughnut(data){
-        var labels=Object.keys(data),values=Object.values(data);
-        return {type:'doughnut',data:{labels:labels.length?labels:['無資料'],datasets:[{data:values.length?values:[1],backgroundColor:labels.length?palette:['#f0f0f0'],borderWidth:2,borderColor:'#ffffff'}]},options:{maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:labels.length>0,position:'right',labels:{color:'#4a4541',font:{size:9,weight:'700'},boxWidth:8}}}}};
-    }
+   var CAT_COLORS={'飲食':'#E07A5F','日常':'#3D405B','交通':'#81B29A','醫療':'#F2CC8F','娛樂':'#9ead9d','治裝':'#A69CAC','保險':'#E8A598','寵物':'#8E9AAF','運動':'#C44536','其他':'#7785AC'};
+function genDoughnut(data){
+    var labels=Object.keys(data),values=Object.values(data);
+    var colors=labels.map(function(l){ return CAT_COLORS[l]||'#cccccc'; });
+    return {type:'doughnut',data:{labels:labels.length?labels:['無資料'],datasets:[{data:values.length?values:[1],backgroundColor:labels.length?colors:['#f0f0f0'],borderWidth:2,borderColor:'#ffffff'}]},options:{maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:labels.length>0,position:'right',labels:{color:'#4a4541',font:{size:9,weight:'700'},boxWidth:8}}}}};
+}
     ['home','ni','guang'].forEach(function(ck){
         var canvas=document.getElementById(ck+'Chart'); if(!canvas) return;
         if(charts[ck]) charts[ck].destroy();
